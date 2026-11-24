@@ -108,6 +108,8 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         }
 
         KuponMentese(adatbazis, tranzakcio, azonosito, osszesites);
+        if (keres.FizetesiMod == "tarca")
+            TarcasFizetes(adatbazis, tranzakcio, profilAzonosito, azonosito, vegosszeg);
         foreach (var tetel in tetelek)
         {
             using var tetelSor = Parancs(adatbazis, tranzakcio, """
@@ -118,7 +120,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             tetelSor.ExecuteNonQuery();
         }
         tranzakcio.Commit();
-        return (new(azonosito, "beerkezett", vegosszeg, idopont, tetelek, osszesites.Kedvezmeny, osszesites.Kuponkod), true);
+        return (new(azonosito, "beerkezett", vegosszeg, idopont, tetelek, osszesites.Kedvezmeny, osszesites.Kuponkod, keres.FizetesiMod), true);
     }
 
     public RendelesOsszesito RendelesLekerese(Guid azonosito)
@@ -170,6 +172,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             using var modositas = Parancs(adatbazis, tranzakcio, "UPDATE rendelesek SET allapot = $allapot WHERE azonosito = $azonosito",
                 ("$allapot", kovetkezo!), ("$azonosito", azonosito.ToString()));
             modositas.ExecuteNonQuery();
+            if (kovetkezo == "torolve") TarcasJovairas(adatbazis, tranzakcio, azonosito);
         }
         tranzakcio.Commit();
         return rendeles with { Allapot = kovetkezo! };
@@ -208,7 +211,8 @@ public sealed partial class EttermiAdattar(string eleresiUt)
     {
         using var rendeles = Parancs(adatbazis, tranzakcio, """
             SELECT r.allapot, r.vegosszeg, r.letrehozva, r.vendeg_neve, r.telefonszam, r.megjegyzes,
-                COALESCE(k.kedvezmeny, 0), k.kuponkod
+                COALESCE(k.kedvezmeny, 0), k.kuponkod,
+                EXISTS (SELECT 1 FROM tarca_muveletek t WHERE t.rendeles_azonosito = r.azonosito AND t.tipus = 'fizetes')
             FROM rendelesek r LEFT JOIN rendeles_kedvezmenyek k ON k.rendeles_azonosito = r.azonosito
             WHERE r.azonosito = $azonosito
             """, ("$azonosito", azonosito.ToString()));
@@ -219,7 +223,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             if (!sor.Read()) throw new KeresHiba(404, "A rendelés nem található.");
             eredmeny = new(azonosito, sor.GetString(0), sor.GetInt32(1), sor.GetString(2), tetelek,
                 sor.GetString(3), sor.GetString(4), sor.GetString(5), sor.GetInt32(6),
-                sor.IsDBNull(7) ? null : sor.GetString(7));
+                sor.IsDBNull(7) ? null : sor.GetString(7), sor.GetBoolean(8) ? "tarca" : "atvetel");
         }
         using var tetelSorok = Parancs(adatbazis, tranzakcio, """
             SELECT etel_azonosito, etel_neve, egysegar, mennyiseg FROM rendelesi_tetelek WHERE rendeles_azonosito = $azonosito ORDER BY etel_azonosito

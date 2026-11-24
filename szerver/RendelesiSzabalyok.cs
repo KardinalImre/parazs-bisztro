@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace Parazs;
 
 internal sealed record EllenorzottRendeles(Guid KeresAzonosito, string Nev, string Telefonszam, string Megjegyzes,
-    SortedDictionary<int, int> Mennyisegek, string Lenyomat, string? Kuponkod);
+    SortedDictionary<int, int> Mennyisegek, string Lenyomat, string? Kuponkod, string FizetesiMod);
 
 internal static class RendelesiSzabalyok
 {
@@ -43,7 +43,12 @@ internal static class RendelesiSzabalyok
         var ujjlenyomat = Convert.ToHexString(SHA256.HashData(lenyomat));
         if (kuponkod is not null)
             ujjlenyomat = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ujjlenyomat + ":" + kuponkod)));
-        return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek, ujjlenyomat, kuponkod);
+        var fizetesiMod = bemenet.FizetesiMod ?? "atvetel";
+        if (fizetesiMod is not ("atvetel" or "tarca"))
+            throw new KeresHiba(400, "Ismeretlen fizetési mód.");
+        if (fizetesiMod == "tarca")
+            ujjlenyomat = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ujjlenyomat + ":tarca")));
+        return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek, ujjlenyomat, kuponkod, fizetesiMod);
     }
 
     internal static string? KuponkodEllenorzese(string? ertek)

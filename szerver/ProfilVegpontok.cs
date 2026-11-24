@@ -23,6 +23,10 @@ public static class ProfilVegpontok
         }).RequireRateLimiting("belepes");
         profil.MapPatch("", (ProfilModositasBemenet bemenet, HttpContext kornyezet) =>
             adattar.ProfilModositasa(SzuksegesProfil(kornyezet, adattar), bemenet));
+        profil.MapGet("/tarca", (HttpContext kornyezet) =>
+            adattar.TarcaLekerese(SzuksegesProfil(kornyezet, adattar).Azonosito));
+        profil.MapPost("/tarca/feltoltesek", (TarcaFeltoltesBemenet bemenet, HttpContext kornyezet) =>
+            adattar.TarcaFeltoltese(SzuksegesProfil(kornyezet, adattar).Azonosito, bemenet));
         profil.MapGet("/rendelesek", (HttpContext kornyezet) =>
             adattar.RendelesiElozmenyek(SzuksegesProfil(kornyezet, adattar).Azonosito));
         profil.MapDelete("/munkamenet", (HttpContext kornyezet) =>

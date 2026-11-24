@@ -116,7 +116,7 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
       {visszaigazolas && (
         <div className="visszaigazolas" role="status">
           <strong>Megkaptuk a rendelésed.</strong>
-          <span>{forintban(visszaigazolas.vegosszeg)} · Fizetés átvételkor</span>
+          <span>{forintban(visszaigazolas.vegosszeg)} · {visszaigazolas.fizetesiMod === 'tarca' ? 'Demópénztárcával fizetve' : 'Fizetés átvételkor'}</span>
           <span>Követési kód</span>
           <code>{visszaigazolas.azonosito}</code>
           <a href="#kovetes">Rendelés követése</a>
@@ -163,6 +163,12 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
                 <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" defaultValue={profil?.telefonszam} required minLength={7} maxLength={25} /></label>
                 <label>Megjegyzés <span className="halvany">(opcionális)</span>
                   <textarea name="megjegyzes" rows={2} maxLength={300} /></label>
+                {profil && <label>Fizetési mód
+                  <select name="fizetesiMod" defaultValue="atvetel">
+                    <option value="atvetel">Fizetés átvételkor</option>
+                    <option value="tarca">Demópénztárca</option>
+                  </select>
+                </label>}
                 <label>Kuponkód <span className="halvany">(opcionális)</span>
                   <input value={kuponkod} maxLength={24} autoComplete="off"
                     onChange={esemeny => { kuponkodBeallitasa(esemeny.target.value); osszesitesHibaBeallitasa(''); }} />
@@ -262,6 +268,7 @@ export function Rendeles() {
       vendegNeve: urlap.get('vendegNeve'), telefonszam: urlap.get('telefonszam'), megjegyzes: urlap.get('megjegyzes'),
       tetelek: sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })),
       kuponkod: osszesites.kuponkod,
+      fizetesiMod: urlap.get('fizetesiMod') || 'atvetel',
     };
     const lenyomat = JSON.stringify(adatok);
     if (bekuldes.current?.lenyomat !== lenyomat)

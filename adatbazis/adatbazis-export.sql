@@ -97,5 +97,21 @@ CREATE TABLE IF NOT EXISTS rendeles_kedvezmenyek (
 INSERT OR IGNORE INTO kuponok (kod, tipus, ertek, minimum_osszeg) VALUES
     ('PARAZS10', 'szazalek', 10, 3000), ('ELVITEL500', 'fix', 500, 4000);
 
+CREATE TABLE IF NOT EXISTS tarca_muveletek (
+    azonosito TEXT PRIMARY KEY NOT NULL,
+    profil_azonosito TEXT NOT NULL REFERENCES profilok(azonosito),
+    tipus TEXT NOT NULL CHECK (tipus IN ('feltoltes', 'fizetes', 'jovairas')),
+    osszeg INTEGER NOT NULL CHECK (osszeg <> 0),
+    letrehozva TEXT NOT NULL,
+    rendeles_azonosito TEXT REFERENCES rendelesek(azonosito),
+    keres_azonosito TEXT,
+    CHECK ((tipus = 'feltoltes' AND osszeg > 0 AND keres_azonosito IS NOT NULL AND rendeles_azonosito IS NULL)
+        OR (tipus = 'fizetes' AND osszeg < 0 AND keres_azonosito IS NULL AND rendeles_azonosito IS NOT NULL)
+        OR (tipus = 'jovairas' AND osszeg > 0 AND keres_azonosito IS NULL AND rendeles_azonosito IS NOT NULL)),
+    UNIQUE (profil_azonosito, keres_azonosito),
+    UNIQUE (rendeles_azonosito, tipus)
+);
+CREATE INDEX IF NOT EXISTS tarca_muveletek_profil_szerint ON tarca_muveletek(profil_azonosito, letrehozva DESC);
+
 RELEASE parazs_export;
 

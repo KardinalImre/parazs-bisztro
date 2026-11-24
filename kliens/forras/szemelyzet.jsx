@@ -95,6 +95,7 @@ export function Szemelyzet() {
                   <code className="halvany">{rendeles.azonosito}</code>
                   <ul>{rendeles.tetelek.map(tetel => <li key={tetel.etelAzonosito}>{tetel.mennyiseg} × {tetel.etelNeve}</li>)}</ul>
                   {rendeles.megjegyzes && <p>Megjegyzés — {rendeles.megjegyzes}</p>}
+                  <p>{rendeles.fizetesiMod === 'tarca' ? 'Demópénztárcás fizetés' : 'Fizetés átvételkor'}</p>
                   <strong>{forintban(rendeles.vegosszeg)}</strong>
                   {kovetkezoAllapot[rendeles.allapot] && (
                     <div className="szemelyzeti-muveletek">
