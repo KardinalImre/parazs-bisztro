@@ -186,4 +186,3 @@ public partial class Foablak : Window
         ValaszGomb.IsEnabled = LezarasGomb.IsEnabled = szerkesztheto && jegy is { Allapot: not "lezart" };
     }
 }
-

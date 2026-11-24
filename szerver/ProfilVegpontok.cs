@@ -57,4 +57,3 @@ public static class ProfilVegpontok
         Secure = kornyezet.Request.IsHttps, Path = "/",
     };
 }
-

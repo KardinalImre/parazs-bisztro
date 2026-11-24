@@ -50,4 +50,3 @@ catch (InvalidOperationException hiba)
     Require(hiba.Message.Contains("HTTPS", StringComparison.Ordinal), "Hiányzik a címmel kapcsolatos hibaüzenet.");
 }
 Console.WriteLine("A WPF-kliens API-műveletei sikeresek.");
-

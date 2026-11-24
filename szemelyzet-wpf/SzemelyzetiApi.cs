@@ -112,4 +112,3 @@ public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
     public void Dispose() => kliens.Dispose();
     private sealed record ApiErrorResponse(string? Hiba);
 }
-

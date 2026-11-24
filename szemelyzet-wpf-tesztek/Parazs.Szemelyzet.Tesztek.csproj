@@ -9,4 +9,3 @@
     <Compile Include="../szemelyzet-wpf/SzemelyzetiApi.cs" Link="SzemelyzetiApi.cs"/>
   </ItemGroup>
 </Project>
-

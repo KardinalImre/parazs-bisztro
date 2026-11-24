@@ -129,4 +129,3 @@ public sealed partial class EttermiAdattar
     private static string HashToken(string token) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 }
-

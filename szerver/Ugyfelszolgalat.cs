@@ -115,4 +115,3 @@ public sealed partial class EttermiAdattar
         new(Guid.Parse(sor.GetString(0)), sor.GetString(1), sor.GetString(2), sor.GetString(3),
             sor.IsDBNull(4) ? null : Guid.Parse(sor.GetString(4)), sor.GetString(5), sor.GetString(6), sor.GetString(7));
 }
-

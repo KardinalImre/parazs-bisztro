@@ -93,4 +93,3 @@ export function Ugyfelszolgalat() {
     </main>
   );
 }
-

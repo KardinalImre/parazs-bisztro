@@ -35,4 +35,3 @@ test('WPF-01 · A WPF API-kliens valódi rendelést, ételt és ügyfélszolgál
     await szerver.bezaras();
   }
 });
-
