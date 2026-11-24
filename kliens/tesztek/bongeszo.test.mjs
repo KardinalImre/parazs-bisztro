@@ -95,3 +95,31 @@ test('UI-02 · Mobilos étlap, kosár megőrzése és rendelés 390 px széless�
   }
 });
 
+
+test('UI-03 · Vendégprofil, előtöltött rendelési adatok és rendelési előzmények', async () => {
+  const oldal = await bongeszo.newPage();
+  oldal.setDefaultTimeout(8000);
+  try {
+    await oldal.goto(szerver.cim + '/profil');
+    await oldal.getByRole('button', { name: 'Új profilt kérek' }).click();
+    await oldal.getByLabel('Név').fill('Profil Próba');
+    await oldal.getByLabel('E-mail-cím').fill('bongeszo@example.com');
+    await oldal.getByLabel('Jelszó', { exact: true }).fill('Bongeszo-jelszo-902');
+    await oldal.getByRole('button', { name: 'Regisztráció', exact: true }).click();
+    await oldal.getByLabel('Telefonszám').fill('06305550100');
+    await oldal.getByRole('button', { name: 'Adatok mentése' }).click();
+    await oldal.getByText('A profiladatokat mentettük.').waitFor();
+    await oldal.getByRole('navigation').getByRole('link', { name: 'Étlap' }).click();
+    await oldal.getByRole('button', { name: 'Margherita kosárba' }).click();
+    await oldal.getByRole('button', { name: 'Tovább az adatokhoz' }).click();
+    assert.equal(await oldal.getByLabel('Név').inputValue(), 'Profil Próba');
+    assert.equal(await oldal.getByLabel('Telefonszám').inputValue(), '06305550100');
+    await oldal.getByRole('button', { name: 'Rendelés leadása' }).click();
+    await oldal.getByText('Megkaptuk a rendelésed.').waitFor();
+    await oldal.getByRole('navigation').getByRole('link', { name: 'Profil' }).click();
+    await oldal.getByRole('heading', { name: 'Korábbi rendeléseim' }).waitFor();
+    await oldal.getByText('1 × Margherita', { exact: true }).waitFor();
+  } finally {
+    await oldal.close();
+  }
+});

@@ -58,5 +58,27 @@ INSERT OR IGNORE INTO etelek (azonosito, kategoria_azonosito, nev, leiras, ar) V
     (9, 4, 'Házi limonádé', 'Frissen facsart citrom, menta és szódavíz, 0,4 l.', 1290),
     (10, 4, 'Szénsavas ásványvíz', 'Palackozott ásványvíz, 0,5 l.', 690);
 
+CREATE TABLE IF NOT EXISTS profilok (
+    azonosito TEXT PRIMARY KEY NOT NULL,
+    nev TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    telefonszam TEXT NOT NULL DEFAULT '',
+    jelszo_lenyomat TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS munkamenetek (
+    lenyomat TEXT PRIMARY KEY NOT NULL,
+    profil_azonosito TEXT NOT NULL REFERENCES profilok(azonosito),
+    lejarat INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS munkamenetek_lejarat_szerint ON munkamenetek(lejarat);
+
+CREATE TABLE IF NOT EXISTS rendeles_profilok (
+    rendeles_azonosito TEXT PRIMARY KEY NOT NULL REFERENCES rendelesek(azonosito),
+    profil_azonosito TEXT NOT NULL REFERENCES profilok(azonosito)
+);
+CREATE INDEX IF NOT EXISTS rendelesek_profil_szerint ON rendeles_profilok(profil_azonosito);
+
 RELEASE parazs_export;
 

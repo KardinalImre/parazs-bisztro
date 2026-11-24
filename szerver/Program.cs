@@ -1,5 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Parazs;
@@ -10,6 +12,14 @@ if (string.IsNullOrWhiteSpace(epito.Configuration["urls"]))
 epito.WebHost.ConfigureKestrel(beallitasok => beallitasok.Limits.MaxRequestBodySize = 16 * 1024);
 epito.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 epito.Logging.AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Warning);
+
+epito.Services.AddRateLimiter(beallitasok =>
+{
+    beallitasok.RejectionStatusCode = 429;
+    beallitasok.AddPolicy("belepes", kornyezet => RateLimitPartition.GetFixedWindowLimiter(
+        kornyezet.Connection.RemoteIpAddress?.ToString() ?? "helyi",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
+});
 
 var mappa = epito.Environment.ContentRootPath;
 var alapertelmezettAdatbazis = Path.Combine(mappa, "adatok", "parazs.sqlite3");
@@ -54,6 +64,7 @@ alkalmazas.UseStatusCodePages(async allapotKornyezet =>
         405 => "Ez a művelet itt nem érhető el.",
         413 => "A kérés túl nagy.",
         415 => "A kérés formátuma nem támogatott.",
+        429 => "Túl sok kérés érkezett. Próbáld meg egy perc múlva.",
         _ => "A kérés sikertelen.",
     };
     if (kornyezet.Request.Path.StartsWithSegments("/api"))
@@ -83,13 +94,15 @@ alkalmazas.Use(async (kornyezet, kovetkezo) =>
 });
 alkalmazas.UseDefaultFiles();
 alkalmazas.UseStaticFiles();
+alkalmazas.UseRateLimiter();
 
 var api = alkalmazas.MapGroup("/api");
+api.ProfilVegpontokFelvetele(adattar);
 api.MapGet("/etlap", () => adattar.EtlapLekerese());
 api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => new { vegosszeg = adattar.KosarOsszesitese(bemenet) });
-api.MapPost("/rendelesek", (RendelesBemenet bemenet) =>
+api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
 {
-    var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet);
+    var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet, ProfilVegpontok.AktualisProfil(kornyezet, adattar)?.Azonosito);
     return letrejott ? Results.Created($"/api/rendelesek/{rendeles.Azonosito}", rendeles) : Results.Ok(rendeles);
 });
 api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.RendelesLekerese(azonosito));
@@ -114,6 +127,7 @@ szemelyzet.MapPatch("/etelek/{azonosito:int}", (int azonosito, ElerhetosegBemene
 
 alkalmazas.MapGet("/admin", () => Results.Redirect("/szemelyzet"));
 alkalmazas.MapFallbackToFile("/szemelyzet", "index.html");
+alkalmazas.MapFallbackToFile("/profil", "index.html");
 alkalmazas.Run();
 
 string AlapertelmezettAdatbazis()

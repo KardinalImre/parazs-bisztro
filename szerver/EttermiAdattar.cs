@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Parazs;
 
-public sealed class EttermiAdattar(string eleresiUt)
+public sealed partial class EttermiAdattar(string eleresiUt)
 {
     private readonly string kapcsolatiKarakterlanc = new SqliteConnectionStringBuilder
     {
@@ -68,7 +68,7 @@ public sealed class EttermiAdattar(string eleresiUt)
         return tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
     }
 
-    public (RendelesOsszesito Rendeles, bool Letrejott) RendelesLetrehozasa(RendelesBemenet bemenet)
+    public (RendelesOsszesito Rendeles, bool Letrejott) RendelesLetrehozasa(RendelesBemenet bemenet, Guid? profilAzonosito)
     {
         var keres = RendelesiSzabalyok.Ellenorzes(bemenet);
         using var adatbazis = KapcsolatMegnyitasa();
@@ -76,7 +76,7 @@ public sealed class EttermiAdattar(string eleresiUt)
         var meglevo = KeresMegkeresese(adatbazis, tranzakcio, keres.KeresAzonosito);
         if (meglevo is { } korabbi)
         {
-            if (korabbi.Lenyomat != keres.Lenyomat)
+            if (korabbi.Lenyomat != keres.Lenyomat || korabbi.ProfilAzonosito != profilAzonosito)
                 throw new KeresHiba(409, "Ezzel a kérésazonosítóval már más tartalmú rendelés érkezett.");
             var rendeles = RendelesOlvasasa(adatbazis, tranzakcio, korabbi.Azonosito).Vendegnek();
             tranzakcio.Commit();
@@ -97,6 +97,13 @@ public sealed class EttermiAdattar(string eleresiUt)
             ("$nev", keres.Nev), ("$telefonszam", keres.Telefonszam), ("$megjegyzes", keres.Megjegyzes),
             ("$vegosszeg", vegosszeg), ("$idopont", idopont));
         beszuras.ExecuteNonQuery();
+        if (profilAzonosito is Guid profil)
+        {
+            using var hozzarendeles = Parancs(adatbazis, tranzakcio, """
+                INSERT INTO rendeles_profilok (rendeles_azonosito, profil_azonosito) VALUES ($rendeles, $profil)
+                """, ("$rendeles", azonosito.ToString()), ("$profil", profil.ToString()));
+            hozzarendeles.ExecuteNonQuery();
+        }
 
         foreach (var tetel in tetelek)
         {
@@ -118,6 +125,22 @@ public sealed class EttermiAdattar(string eleresiUt)
         var rendeles = RendelesOlvasasa(adatbazis, tranzakcio, azonosito).Vendegnek();
         tranzakcio.Commit();
         return rendeles;
+    }
+
+    public IReadOnlyList<RendelesOsszesito> RendelesiElozmenyek(Guid profilAzonosito)
+    {
+        using var adatbazis = KapcsolatMegnyitasa();
+        using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
+        using var lekerdezes = Parancs(adatbazis, tranzakcio, """
+            SELECT r.azonosito FROM rendelesek r JOIN rendeles_profilok p ON p.rendeles_azonosito = r.azonosito
+            WHERE p.profil_azonosito = $profil ORDER BY r.letrehozva DESC, r.azonosito LIMIT 100
+            """, ("$profil", profilAzonosito.ToString()));
+        var azonositok = new List<Guid>();
+        using (var sorok = lekerdezes.ExecuteReader())
+            while (sorok.Read()) azonositok.Add(Guid.Parse(sorok.GetString(0)));
+        var rendelesek = azonositok.Select(id => RendelesOlvasasa(adatbazis, tranzakcio, id).Vendegnek()).ToArray();
+        tranzakcio.Commit();
+        return rendelesek;
     }
 
     public IReadOnlyList<SzemelyzetiRendeles> RendelesekLekerese()
@@ -149,12 +172,16 @@ public sealed class EttermiAdattar(string eleresiUt)
         return rendeles with { Allapot = kovetkezo! };
     }
 
-    private static (Guid Azonosito, string Lenyomat)? KeresMegkeresese(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid keresAzonosito)
+    private static (Guid Azonosito, string Lenyomat, Guid? ProfilAzonosito)? KeresMegkeresese(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid keresAzonosito)
     {
-        using var lekerdezes = Parancs(adatbazis, tranzakcio, "SELECT azonosito, keres_lenyomat FROM rendelesek WHERE keres_azonosito = $keres",
-            ("$keres", keresAzonosito.ToString()));
+        using var lekerdezes = Parancs(adatbazis, tranzakcio, """
+            SELECT r.azonosito, r.keres_lenyomat, p.profil_azonosito
+            FROM rendelesek r LEFT JOIN rendeles_profilok p ON p.rendeles_azonosito = r.azonosito
+            WHERE r.keres_azonosito = $keres
+            """, ("$keres", keresAzonosito.ToString()));
         using var sor = lekerdezes.ExecuteReader();
-        return sor.Read() ? (Guid.Parse(sor.GetString(0)), sor.GetString(1)) : null;
+        return sor.Read() ? (Guid.Parse(sor.GetString(0)), sor.GetString(1),
+            sor.IsDBNull(2) ? null : Guid.Parse(sor.GetString(2))) : null;
     }
 
     private static List<RendelesiTetel> RendelhetoTetelek(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
