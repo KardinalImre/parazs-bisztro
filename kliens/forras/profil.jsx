@@ -1,5 +1,35 @@
 import { useEffect, useState } from 'react';
-import { api } from './api.js';
+import { api, allapotFelirat, forintban } from './api.js';
+
+function Elozmenyek({ azonosito }) {
+  const [rendelesek, rendelesekBeallitasa] = useState(null);
+  const [hiba, hibaBeallitasa] = useState('');
+  useEffect(() => {
+    let aktiv = true;
+    api('/profil/rendelesek').then(valasz => { if (aktiv) rendelesekBeallitasa(valasz); })
+      .catch(problema => { if (aktiv) hibaBeallitasa(problema.message); });
+    return () => { aktiv = false; };
+  }, [azonosito]);
+  return (
+    <section className="profil-elozmenyek">
+      <h2>Korábbi rendeléseim</h2>
+      {hiba && <p className="hiba" role="alert">{hiba}</p>}
+      {!hiba && rendelesek === null && <p role="status">Betöltés…</p>}
+      {rendelesek?.length === 0 && <p>Még nincs ehhez a profilhoz tartozó rendelés.</p>}
+      {rendelesek?.length > 0 && <div className="szemelyzeti-rendelesek">
+        {rendelesek.map(rendeles => <article key={rendeles.azonosito} className="szemelyzeti-rendeles">
+          <div className="kosar-fejlec">
+            <strong>{new Date(rendeles.letrehozva).toLocaleString('hu-HU')}</strong>
+            <span className={'allapot ' + rendeles.allapot}>{allapotFelirat[rendeles.allapot]}</span>
+          </div>
+          <ul>{rendeles.tetelek.map(tetel => <li key={tetel.etelAzonosito}>{tetel.mennyiseg} × {tetel.etelNeve}</li>)}</ul>
+          <p><strong>{forintban(rendeles.vegosszeg)}</strong></p>
+          <a href={'/?rendeles=' + rendeles.azonosito + '#kovetes'}>Rendelés követése</a>
+        </article>)}
+      </div>}
+    </section>
+  );
+}
 
 export function Profil() {
   const [profil, profilBeallitasa] = useState(null);
@@ -59,7 +89,8 @@ export function Profil() {
       </div>
       {hiba && <p className="hiba" role="alert">{hiba}</p>}
       {uzenet && <p className="visszaigazolas" role="status">{uzenet}</p>}
-      {profil ? (
+      {profil ? (<>
+
         <form className="szemelyzeti-belepes" onSubmit={mentes}>
           <h2>Profiladatok</h2>
           <p className="halvany">{profil.email}</p>
@@ -67,7 +98,8 @@ export function Profil() {
           <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" defaultValue={profil.telefonszam} maxLength={25} /></label>
           <button className="gomb elsodleges" disabled={foglalt}>Adatok mentése</button>
         </form>
-      ) : (
+        <Elozmenyek key={profil.azonosito} azonosito={profil.azonosito} />
+      </>) : (
         <form className="szemelyzeti-belepes" onSubmit={belepes}>
           <h2>{regisztracio ? 'Profil létrehozása' : 'Bejelentkezés'}</h2>
           {regisztracio && <label>Név<input name="nev" autoComplete="name" required minLength={2} maxLength={80} /></label>}

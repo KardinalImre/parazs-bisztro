@@ -23,6 +23,8 @@ public static class ProfilVegpontok
         }).RequireRateLimiting("belepes");
         profil.MapPatch("", (ProfilModositasBemenet bemenet, HttpContext kornyezet) =>
             adattar.ProfilModositasa(SzuksegesProfil(kornyezet, adattar), bemenet));
+        profil.MapGet("/rendelesek", (HttpContext kornyezet) =>
+            adattar.RendelesiElozmenyek(SzuksegesProfil(kornyezet, adattar).Azonosito));
         profil.MapDelete("/munkamenet", (HttpContext kornyezet) =>
         {
             adattar.MunkamenetTorlese(kornyezet.Request.Cookies[SutiNev]);

@@ -191,3 +191,6 @@ textarea { resize: vertical; }
 @media (max-width: 420px) {
   .fejlec-belso nav { flex-wrap: wrap; justify-content: flex-end; column-gap: 10px; row-gap: 1px; }
 }
+
+.profil-elozmenyek { margin-top: 28px; }
+.profil-elozmenyek h2 { margin-bottom: 14px; }

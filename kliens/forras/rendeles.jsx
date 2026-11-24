@@ -198,7 +198,7 @@ export function Rendeles() {
   });
   const [visszaigazolas, visszaigazolasBeallitasa] = useState(null);
   const [kovetett, kovetettBeallitasa] = useState(null);
-  const [kod, kodBeallitasa] = useState(() => String(tarolt(rendelesKulcs, '')));
+  const [kod, kodBeallitasa] = useState(() => String(new URLSearchParams(location.search).get('rendeles') || tarolt(rendelesKulcs, '')));
   const [rendelesHiba, rendelesHibaBeallitasa] = useState('');
   const [foglalt, foglaltsagBeallitasa] = useState(false);
   const bekuldes = useRef(null);

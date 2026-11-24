@@ -100,9 +100,9 @@ var api = alkalmazas.MapGroup("/api");
 api.ProfilVegpontokFelvetele(adattar);
 api.MapGet("/etlap", () => adattar.EtlapLekerese());
 api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => new { vegosszeg = adattar.KosarOsszesitese(bemenet) });
-api.MapPost("/rendelesek", (RendelesBemenet bemenet) =>
+api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
 {
-    var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet);
+    var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet, ProfilVegpontok.AktualisProfil(kornyezet, adattar)?.Azonosito);
     return letrejott ? Results.Created($"/api/rendelesek/{rendeles.Azonosito}", rendeles) : Results.Ok(rendeles);
 });
 api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.RendelesLekerese(azonosito));

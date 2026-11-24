@@ -74,5 +74,11 @@ CREATE TABLE IF NOT EXISTS munkamenetek (
 
 CREATE INDEX IF NOT EXISTS munkamenetek_lejarat_szerint ON munkamenetek(lejarat);
 
+CREATE TABLE IF NOT EXISTS rendeles_profilok (
+    rendeles_azonosito TEXT PRIMARY KEY NOT NULL REFERENCES rendelesek(azonosito),
+    profil_azonosito TEXT NOT NULL REFERENCES profilok(azonosito)
+);
+CREATE INDEX IF NOT EXISTS rendelesek_profil_szerint ON rendeles_profilok(profil_azonosito);
+
 RELEASE parazs_export;
 

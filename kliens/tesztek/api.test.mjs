@@ -168,3 +168,22 @@ test('API-10 · A profilhoz való hozzáférést a munkamenet védi', async () =
   assert.equal((await szerver.keres('/profil', { suti })).torzs.profil, null);
   assert.equal((await szerver.keres('/profil/belepes', { modszer: 'POST', adatok })).kod, 200);
 });
+
+test('API-11 · A rendelési előzmény csak a saját új rendeléseket mutatja', async () => {
+  async function vendeg(email) {
+    const valasz = await szerver.keres('/profil/regisztracio', {
+      modszer: 'POST', adatok: { nev: 'Előzmény Teszt', email, jelszo: 'Előzmény-Jelszó-1' },
+    });
+    assert.equal(valasz.kod, 201);
+    return valasz.suti.split(';')[0];
+  }
+  assert.equal((await szerver.keres('/profil/rendelesek')).kod, 401);
+  const elso = await vendeg('elso@example.com');
+  const masodik = await vendeg('masodik@example.com');
+  const adatok = minta({ tetelek: [{ etelAzonosito: 2, mennyiseg: 1 }] });
+  const rendeles = await szerver.keres('/rendelesek', { modszer: 'POST', adatok, suti: elso });
+  assert.equal(rendeles.kod, 201);
+  assert.deepEqual((await szerver.keres('/profil/rendelesek', { suti: elso })).torzs, [rendeles.torzs]);
+  assert.deepEqual((await szerver.keres('/profil/rendelesek', { suti: masodik })).torzs, []);
+  assert.equal((await szerver.keres('/rendelesek', { modszer: 'POST', adatok, suti: masodik })).kod, 409);
+});
