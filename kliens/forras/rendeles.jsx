@@ -104,12 +104,16 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
               <li key={azonosito}>
                 <div>
                   <strong>{etel?.nev || 'Már nem rendelhető tétel'}</strong>
-                  <span>{etel ? forintban(etel.ar * mennyiseg) : 'Töröld a kosárból.'}</span>
+                  <span>{etel ? mennyiseg + ' × ' + forintban(etel.ar) : 'Töröld a kosárból.'}</span>
+                  {etel && <strong className="kosar-reszosszeg">{forintban(etel.ar * mennyiseg)}</strong>}
                 </div>
-                {etel ? <MennyisegVezerlo nev={etel.nev} adag={mennyiseg} foglalt={foglalt}
-                  modositas={elteres => modositas(azonosito, elteres)} />
-                  : <button type="button" className="egyszeru" disabled={foglalt}
-                    onClick={() => modositas(azonosito, -mennyiseg)}>Törlés</button>}
+                <div className="kosar-muveletek">
+                {etel && <MennyisegVezerlo nev={etel.nev} adag={mennyiseg} foglalt={foglalt}
+                  modositas={elteres => modositas(azonosito, elteres)} />}
+                  <button type="button" className="egyszeru" disabled={foglalt}
+                    aria-label={etel ? etel.nev + ' eltávolítása' : 'Elérhetetlen tétel eltávolítása'}
+                    onClick={() => modositas(azonosito, -mennyiseg)}>Törlés</button>
+                </div>
               </li>
             ))}
           </ul>

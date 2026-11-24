@@ -183,3 +183,7 @@ textarea { resize: vertical; }
 
 
 .etlap-kereso { display: block; max-width: 31rem; margin-top: 1rem; }
+
+.kosar-muveletek { display: grid; justify-items: end; }
+.kosar-muveletek .egyszeru { font-size: .85rem; }
+.kosar-reszosszeg { display: block; margin-top: 4px; }
