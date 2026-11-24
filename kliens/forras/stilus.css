@@ -194,3 +194,11 @@ textarea { resize: vertical; }
 
 .profil-elozmenyek { margin-top: 28px; }
 .profil-elozmenyek h2 { margin-bottom: 14px; }
+
+.kosar-kupon { margin-top: 12px; color: #254e24; font-weight: 700; }
+
+label select { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 10px;
+  border: 1px solid #cabcaf; border-radius: 7px; background: var(--feher); color: var(--tinta); font: inherit; }
+.tarca-feltoltes { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 16px; }
+.tarca-muveletek { list-style: none; padding: 0 !important; }
+.tarca-muveletek li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--vonal); }

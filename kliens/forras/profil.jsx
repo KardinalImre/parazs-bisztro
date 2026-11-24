@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, allapotFelirat, forintban } from './api.js';
+import { Tarca } from './tarca.jsx';
 
 function Elozmenyek({ azonosito }) {
   const [rendelesek, rendelesekBeallitasa] = useState(null);
@@ -98,6 +99,7 @@ export function Profil() {
           <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" defaultValue={profil.telefonszam} maxLength={25} /></label>
           <button className="gomb elsodleges" disabled={foglalt}>Adatok mentése</button>
         </form>
+        <Tarca key={'tarca-' + profil.azonosito} />
         <Elozmenyek key={profil.azonosito} azonosito={profil.azonosito} />
       </>) : (
         <form className="szemelyzeti-belepes" onSubmit={belepes}>
