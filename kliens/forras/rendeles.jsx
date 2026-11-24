@@ -269,6 +269,7 @@ export function Rendeles() {
       tetelek: sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })),
       kuponkod: osszesites.kuponkod,
       fizetesiMod: urlap.get('fizetesiMod') || 'atvetel',
+      vartProfilAzonosito: profil?.azonosito ?? null,
     };
     const lenyomat = JSON.stringify(adatok);
     if (bekuldes.current?.lenyomat !== lenyomat)

@@ -11,7 +11,7 @@ A [tesztkód](../kliens/tesztek/api.test.mjs) önálló ASP.NET Core-tesztszerve
 - **API-01–03 · Étlap, rendelés és validáció.** Ellenőrzött a tíz mintaétel, a szerveroldali ár, a nyilvános rendelésválasz adatszűrése, valamint a hibás tétel, telefonszám, kosár és JSON elutasítása.
 - **API-04–07 · Ismétlés, jogosultság és megőrzés.** Öt párhuzamos beküldésből egy rendelés jött létre. Kulcs nélkül a személyzeti kérések elutasításra kerültek. Működött az állapotátmenet, az étel elrejtése és az újraindítás utáni megőrzés.
 - **API-08–09 · Korábbi adatok és ár.** A korábbi adatbázis átvétele megőrizte a tételeket és az eredeti követési kódot. Eltérő, előzetesen jóváhagyott végösszegre 409 érkezett.
-- **API-10–11 · Profil és előzmények.** Regisztráció, belépés, adatmódosítás és kilépés működött. Másik profilból a saját rendelés nem jelent meg. Más profil azonos kérésazonosítóval sem kapta meg a rendelést.
+- **API-10–11 · Profil és előzmények.** Regisztráció, belépés, adatmódosítás és kilépés működött. Másik profilból a saját rendelés nem jelent meg. Más profil azonos kérésazonosítóval sem kapta meg a rendelést. A lejárt vagy megváltozott profilhoz tartozó rendelési kérés 401-et adott.
 - **API-12–13 · Kupon és tárca.** A százalékos kupon a szerveren számolódott, az érvénytelen és a minimum alatti kódot a szerver elutasította. A tárcafeltöltés és rendelés ismétlése egyszeri egyenlegváltozást eredményezett. Elégtelen egyenlegnél a rendelés nem maradt az adatbázisban. Törléskor egyszeri jóváírás történt.
 - **API-14 · Ügyfélszolgálat.** A jegy beküldhető, megválaszolható és lezárható. Vendégoldalon az e-mail-cím és a beküldött üzenet nem jelenik meg. A válasz az ügyazonosítóval lekérhető.
 

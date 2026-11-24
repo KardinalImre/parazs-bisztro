@@ -21,7 +21,7 @@ A szerver első indításkor feltölti a mintaétlapot. A személyzeti kulcs az 
 
 ## Windowsos személyzeti alkalmazás
 
-A [GitHub-kiadásból](https://github.com/KardinalImre/parazs-bisztro/releases/tag/v1.0.0-rc.1) töltsd le a **Parazs-Szemelyzet-win-x64.msi** fájlt. A telepítő a WPF-alkalmazást és a hozzá tartozó .NET futtatókörnyezetet tartalmazza. Telepítés után a Start menüben keresd a **Parázs Bisztró – Személyzet** nevet.
+A [GitHub-kiadásból](https://github.com/KardinalImre/parazs-bisztro/releases/tag/v1.0.0) töltsd le a **Parazs-Szemelyzet-win-x64.msi** fájlt. A telepítő a WPF-alkalmazást és a hozzá tartozó .NET futtatókörnyezetet tartalmazza. Telepítés után a Start menüben keresd a **Parázs Bisztró – Személyzet** nevet.
 
 Indítsd el a webszervert, majd a WPF-ablakba írd be a szerver címét és a terminálban megjelenő személyzeti kulcsot. Forrásból Windowson így indítható:
 

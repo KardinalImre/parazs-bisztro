@@ -106,7 +106,10 @@ api.MapGet("/etlap", () => adattar.GetMenu());
 api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => adattar.QuoteCart(bemenet));
 api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
 {
-    var (rendeles, letrejott) = adattar.CreateOrder(bemenet, ProfilVegpontok.GetCurrentProfile(kornyezet, adattar)?.Azonosito);
+    var profilAzonosito = ProfilVegpontok.GetCurrentProfile(kornyezet, adattar)?.Azonosito;
+    if (bemenet.VartProfilAzonosito is Guid vart && vart != profilAzonosito)
+        throw new KeresHiba(401, "A rendeléshez tartozó profil megváltozott. Jelentkezz be újra.");
+    var (rendeles, letrejott) = adattar.CreateOrder(bemenet, profilAzonosito);
     return letrejott ? Results.Created($"/api/rendelesek/{rendeles.Azonosito}", rendeles) : Results.Ok(rendeles);
 });
 api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.GetOrder(azonosito));

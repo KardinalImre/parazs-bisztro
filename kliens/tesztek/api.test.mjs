@@ -181,7 +181,11 @@ test('API-11 · A rendelési előzmény csak a saját új rendeléseket mutatja'
   const elso = await vendeg('elso@example.com');
   const masodik = await vendeg('masodik@example.com');
   const adatok = minta({ tetelek: [{ etelAzonosito: 2, mennyiseg: 1 }] });
-  const rendeles = await szerver.keres('/rendelesek', { modszer: 'POST', adatok, suti: elso });
+  const profil = (await szerver.keres('/profil', { suti: elso })).torzs.profil;
+  const fiokosAdatok = { ...adatok, vartProfilAzonosito: profil.azonosito };
+  assert.equal((await leadas(fiokosAdatok)).kod, 401);
+  assert.equal((await szerver.keres('/rendelesek', { modszer: 'POST', adatok: fiokosAdatok, suti: masodik })).kod, 401);
+  const rendeles = await szerver.keres('/rendelesek', { modszer: 'POST', adatok: fiokosAdatok, suti: elso });
   assert.equal(rendeles.kod, 201);
   assert.deepEqual((await szerver.keres('/profil/rendelesek', { suti: elso })).torzs, [rendeles.torzs]);
   assert.deepEqual((await szerver.keres('/profil/rendelesek', { suti: masodik })).torzs, []);

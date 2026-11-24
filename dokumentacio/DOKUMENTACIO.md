@@ -9,7 +9,7 @@ A rendszer az éttermi elviteles előrendelést és a rendelésekkel kapcsolatos
 1. Az étlapon név és leírás szerint lehet keresni, ékezetek nélkül is. A találatok kategória szerint szűrhetők.
 2. A kosár megmutatja a fogások darabszámát, egységárát és részösszegét. Egy fogásból legfeljebb 20 adag, rendelésenként legfeljebb 30 különböző fogás választható. Minden sor külön törölhető.
 3. Az átvételi űrlap megnyitásakor az API az aktuális árak és elérhetőség alapján ad vissza végösszeget. A megváltozott kosarat vagy kuponkódot újból ellenőrizni kell. Leadáskor a szerver véglegesíti az összeget.
-4. A bejelentkezett vendég a névvel és telefonszámmal előtöltött űrlapot kapja. A rendelés a saját profiljában is megjelenik. A vendégrendelések követési kóddal ellenőrizhetők.
+4. A bejelentkezett vendég a névvel és telefonszámmal előtöltött űrlapot kapja. A rendelés a saját profiljában is megjelenik. Ha időközben lejár vagy megváltozik a munkamenet, a szerver újbóli bejelentkezést kér. A vendégrendelések követési kóddal ellenőrizhetők.
 5. A vendég fizethet átvételkor, vagy bejelentkezve használhatja a demópénztárcát. A próbaegyenleg 1 000, 5 000 vagy 10 000 Ft-tal tölthető fel. A jóváírás és a fizetés a helyi demó adatbázisában történik.
 6. Az ügyfélszolgálati oldalon e-mail-címmel és opcionálisan rendelési kóddal lehet üzenetet beküldeni. A kapott ügyazonosítóval ugyanitt olvasható a válasz.
 
