@@ -181,3 +181,5 @@ textarea { resize: vertical; }
   .szemelyzeti-eszkoztar { flex-wrap: wrap; margin-bottom: 12px; }
 }
 
+
+.etlap-kereso { display: block; max-width: 31rem; margin-top: 1rem; }

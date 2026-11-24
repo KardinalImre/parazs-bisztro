@@ -4,6 +4,10 @@ import { api, forintban, eltarol, keresAzonosito, allapotFelirat, tarolt } from 
 const uresEtlap = { kategoriak: [], etelek: [] };
 const kosarKulcs = 'parazs.cart';
 const rendelesKulcs = 'parazs.lastOrder';
+function keresheto(szoveg) {
+  return szoveg.toLocaleLowerCase('hu-HU').normalize('NFD').replace(/\p{M}/gu, '');
+}
+
 const kovetesiMinta = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 
 function MennyisegVezerlo({ nev, adag, foglalt, modositas }) {
@@ -146,6 +150,7 @@ export function Rendeles() {
   const [etlapHiba, etlapHibaBeallitasa] = useState('');
   const [betolt, betoltesBeallitasa] = useState(true);
   const [kategoria, kategoriaBeallitasa] = useState(0);
+  const [kereses, keresesBeallitasa] = useState('');
   const [kosar, kosarBeallitasa] = useState(() => {
     const mentett = tarolt(kosarKulcs, []);
     if (!Array.isArray(mentett)) return [];
@@ -179,6 +184,12 @@ export function Rendeles() {
   const sorok = kosar.map(sor => ({ ...sor, etel: azonositoSzerint.get(sor.azonosito) }));
   const vegosszeg = sorok.reduce((osszeg, sor) => osszeg + (sor.etel?.ar ?? 0) * sor.mennyiseg, 0);
   const darab = kosar.reduce((osszeg, sor) => osszeg + sor.mennyiseg, 0);
+  const szavak = keresheto(kereses.trim()).split(/\s+/).filter(Boolean);
+  const talalatok = etlap.etelek.filter(etel => {
+    const szoveg = keresheto(etel.nev + ' ' + etel.leiras);
+    return (!kategoria || etel.kategoriaAzonosito === kategoria)
+      && szavak.every(szo => szoveg.includes(szo));
+  });
 
   function modositas(azonosito, elteres) {
     if (folyamatban.current) return;
@@ -242,6 +253,10 @@ export function Rendeles() {
             <div><span className="felirat">RENDELÉS ELVITELRE</span><h2 id="etlap-cim">Étlap</h2></div>
             <a className="gomb masodlagos kosar-ugras" href="#kosar">Kosár ({darab})</a>
           </div>
+          <label className="etlap-kereso">Keresés az étlapon
+            <input type="search" value={kereses} onChange={esemeny => keresesBeallitasa(esemeny.target.value)}
+              placeholder="Például pizza vagy bazsalikom" maxLength={100} />
+          </label>
           <div className="szurok" aria-label="Ételkategóriák">
             {[{ azonosito: 0, nev: 'Minden' }, ...etlap.kategoriak].map(tetel => (
               <button key={tetel.azonosito} type="button" aria-pressed={kategoria === tetel.azonosito}
@@ -252,7 +267,7 @@ export function Rendeles() {
           {etlapHiba && <p className="hiba" role="alert">{etlapHiba} <button className="egyszeru" onClick={etlapBetoltese}>Újrapróbálom</button></p>}
           {!betolt && !etlapHiba && (
             <div className="etel-racs">
-              {etlap.etelek.filter(etel => !kategoria || etel.kategoriaAzonosito === kategoria).map(etel => {
+              {talalatok.map(etel => {
                 const mennyiseg = kosar.find(sor => sor.azonosito === etel.azonosito)?.mennyiseg ?? 0;
                 return (
                   <article className="etel" key={etel.azonosito}>
@@ -271,8 +286,7 @@ export function Rendeles() {
                   </article>
                 );
               })}
-              {!etlap.etelek.some(etel => !kategoria || etel.kategoriaAzonosito === kategoria) &&
-                <p>Ebben a kategóriában jelenleg nincs rendelhető étel.</p>}
+              {!talalatok.length && <p role="status">Nincs a szűrésnek megfelelő rendelhető étel.</p>}
             </div>
           )}
         </section>
