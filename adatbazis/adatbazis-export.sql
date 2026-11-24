@@ -113,5 +113,18 @@ CREATE TABLE IF NOT EXISTS tarca_muveletek (
 );
 CREATE INDEX IF NOT EXISTS tarca_muveletek_profil_szerint ON tarca_muveletek(profil_azonosito, letrehozva DESC);
 
+CREATE TABLE IF NOT EXISTS ugyfelszolgalati_jegyek (
+    azonosito TEXT PRIMARY KEY NOT NULL,
+    keres_azonosito TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
+    targy TEXT NOT NULL,
+    uzenet TEXT NOT NULL,
+    rendeles_azonosito TEXT REFERENCES rendelesek(azonosito),
+    allapot TEXT NOT NULL DEFAULT 'nyitott' CHECK (allapot IN ('nyitott', 'megvalaszolt', 'lezart')),
+    valasz TEXT NOT NULL DEFAULT '',
+    letrehozva TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS jegyek_rendeles_szerint ON ugyfelszolgalati_jegyek(rendeles_azonosito);
+
 RELEASE parazs_export;
 

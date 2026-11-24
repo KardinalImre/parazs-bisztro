@@ -230,3 +230,28 @@ test('API-13 · A demótárca terhelése, jóváírása és ismétlése tranzakc
   assert.equal(tarca.egyenleg, 5000);
   assert.deepEqual(tarca.muveletek.map(tetel => tetel.tipus), ['jovairas', 'fizetes', 'feltoltes']);
 });
+
+test('API-14 · Az ügyfélszolgálati jegy követhető, megválaszolható és lezárható', async () => {
+  const utvonal = '/ugyfelszolgalat/jegyek';
+  const adatok = {
+    keresAzonosito: randomUUID(), email: 'ugyfel@example.com', targy: 'Kérdés a rendelésről',
+    uzenet: 'Szeretnék érdeklődni az étlapról.',
+  };
+  const bekuld = adatok => szerver.keres(utvonal, { modszer: 'POST', adatok });
+  assert.equal((await bekuld({ ...adatok, rendelesAzonosito: randomUUID() })).kod, 404);
+  const uj = await bekuld(adatok);
+  assert.equal(uj.kod, 201);
+  assert.equal((await bekuld(adatok)).torzs.azonosito, uj.torzs.azonosito);
+  assert.equal((await bekuld({ ...adatok, targy: 'Másik tárgy' })).kod, 409);
+  assert.equal((await szerver.keres('/szemelyzet/jegyek')).kod, 401);
+  const jegyek = await szerver.keres('/szemelyzet/jegyek', { szemelyzet: true });
+  assert.equal(jegyek.torzs[0].email, adatok.email);
+  const jegyUtvonal = '/jegyek/' + uj.torzs.azonosito;
+  assert.equal((await modositasKuldese(jegyUtvonal, { allapot: 'megvalaszolt', valasz: 'Szívesen segítünk.' })).kod, 200);
+  assert.equal((await modositasKuldese(jegyUtvonal, { allapot: 'lezart' })).kod, 200);
+  assert.equal((await modositasKuldese(jegyUtvonal, { allapot: 'megvalaszolt', valasz: 'Új válasz.' })).kod, 409);
+  const kovetes = await szerver.keres(utvonal + '/' + uj.torzs.azonosito);
+  assert.equal(kovetes.torzs.valasz, 'Szívesen segítünk.');
+  assert.equal(kovetes.torzs.allapot, 'lezart');
+  assert.ok(!('email' in kovetes.torzs) && !('uzenet' in kovetes.torzs));
+});
