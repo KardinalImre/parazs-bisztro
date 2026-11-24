@@ -14,25 +14,25 @@ public partial class Foablak : Window
     public Foablak()
     {
         InitializeComponent();
-        FeluletFrissitese();
+        UpdateControls();
         Closed += (_, _) => api?.Dispose();
     }
 
-    private async void Belepes(object kuldo, RoutedEventArgs esemeny)
+    private async void OnSignInClick(object kuldo, RoutedEventArgs esemeny)
     {
-        await Muvelet(async () =>
+        await RunActionAsync(async () =>
         {
             var kulcs = SzemelyzetiKulcs.Password.Trim();
             if (kulcs.Length is < 16 or > 128 || kulcs.Any(karakter => karakter is < '!' or > '~'))
                 throw new InvalidOperationException("Add meg a terminálban megjelenő személyzeti kulcsot.");
-            var cim = SzemelyzetiApi.CimEllenorzese(SzerverCim.Text);
+            var cim = SzemelyzetiApi.ValidateBaseAddress(SzerverCim.Text);
             var kapcsolat = new SzemelyzetiApi(cim, kulcs);
             try
             {
-                var adatok = await kapcsolat.Frissites();
+                var adatok = await kapcsolat.FetchDashboardAsync();
                 api = kapcsolat;
                 SzemelyzetiKulcs.Clear();
-                AdatokMegjelenitese(adatok);
+                DisplayData(adatok);
             }
             catch
             {
@@ -42,10 +42,10 @@ public partial class Foablak : Window
         }, "Kapcsolódva a rendelőrendszerhez.");
     }
 
-    private async void Frissites(object kuldo, RoutedEventArgs esemeny) =>
-        await Muvelet(AdatokFrissitese, "A listák frissültek.");
+    private async void OnRefreshClick(object kuldo, RoutedEventArgs esemeny) =>
+        await RunActionAsync(RefreshAsync, "A listák frissültek.");
 
-    private void Kilepes(object kuldo, RoutedEventArgs esemeny)
+    private void OnSignOutClick(object kuldo, RoutedEventArgs esemeny)
     {
         api?.Dispose();
         api = null;
@@ -54,52 +54,52 @@ public partial class Foablak : Window
         EtelTabla.ItemsSource = null;
         JegyTabla.ItemsSource = null;
         AllapotUzenet.Text = "Kiléptél a személyzeti felületről.";
-        FeluletFrissitese();
+        UpdateControls();
     }
 
-    private async void RendelesTovabb(object kuldo, RoutedEventArgs esemeny)
+    private async void OnAdvanceOrderClick(object kuldo, RoutedEventArgs esemeny)
     {
         if (RendelesTabla.SelectedItem is Rendeles rendeles && kovetkezoAllapot is string allapot)
-            await Muvelet(() => ValtozasMentese(() => api!.RendelesModositasa(rendeles.Azonosito, allapot)),
+            await RunActionAsync(() => SaveAndRefreshAsync(() => api!.UpdateOrderAsync(rendeles.Azonosito, allapot)),
                 "A rendelés állapota frissült.");
     }
 
-    private async void RendelesTorlese(object kuldo, RoutedEventArgs esemeny)
+    private async void OnCancelOrderClick(object kuldo, RoutedEventArgs esemeny)
     {
         if (RendelesTabla.SelectedItem is not Rendeles rendeles) return;
         if (MessageBox.Show(this, "Törlöd a kijelölt rendelést?", "Rendelés törlése",
             MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
-        await Muvelet(() => ValtozasMentese(() => api!.RendelesModositasa(rendeles.Azonosito, "torolve")),
+        await RunActionAsync(() => SaveAndRefreshAsync(() => api!.UpdateOrderAsync(rendeles.Azonosito, "torolve")),
             "A rendelést töröltük.");
     }
 
-    private async void EtelValtasa(object kuldo, RoutedEventArgs esemeny)
+    private async void OnToggleDishClick(object kuldo, RoutedEventArgs esemeny)
     {
         if (EtelTabla.SelectedItem is Etel etel)
-            await Muvelet(() => ValtozasMentese(() => api!.EtelModositasa(etel.Azonosito, !etel.Elerheto)),
+            await RunActionAsync(() => SaveAndRefreshAsync(() => api!.UpdateDishAsync(etel.Azonosito, !etel.Elerheto)),
                 "Az étel elérhetősége frissült.");
     }
 
-    private async void JegyValaszMentese(object kuldo, RoutedEventArgs esemeny)
+    private async void OnSaveReplyClick(object kuldo, RoutedEventArgs esemeny)
     {
         if (JegyTabla.SelectedItem is Jegy jegy)
-            await Muvelet(() => ValtozasMentese(() => api!.JegyModositasa(jegy.Azonosito, "megvalaszolt", JegyValasz.Text)),
+            await RunActionAsync(() => SaveAndRefreshAsync(() => api!.UpdateTicketAsync(jegy.Azonosito, "megvalaszolt", JegyValasz.Text)),
                 "A válasz megjelent az ügyfélszolgálati oldalon.");
     }
 
-    private async void JegyLezarasa(object kuldo, RoutedEventArgs esemeny)
+    private async void OnCloseTicketClick(object kuldo, RoutedEventArgs esemeny)
     {
         if (JegyTabla.SelectedItem is Jegy jegy)
-            await Muvelet(() => ValtozasMentese(() => api!.JegyModositasa(jegy.Azonosito, "lezart", null)),
+            await RunActionAsync(() => SaveAndRefreshAsync(() => api!.UpdateTicketAsync(jegy.Azonosito, "lezart", null)),
                 "Az ügyet lezártuk.");
     }
 
-    private async Task Muvelet(Func<Task> feladat, string siker)
+    private async Task RunActionAsync(Func<Task> feladat, string siker)
     {
         if (foglalt) return;
         foglalt = true;
         AllapotUzenet.Text = "Feldolgozás…";
-        FeluletFrissitese();
+        UpdateControls();
         try
         {
             await feladat();
@@ -112,22 +112,22 @@ public partial class Foablak : Window
         finally
         {
             foglalt = false;
-            FeluletFrissitese();
+            UpdateControls();
         }
     }
 
-    private async Task ValtozasMentese(Func<Task> mentes)
+    private async Task SaveAndRefreshAsync(Func<Task> mentes)
     {
         await mentes();
-        await AdatokFrissitese();
+        await RefreshAsync();
     }
 
-    private async Task AdatokFrissitese()
+    private async Task RefreshAsync()
     {
-        if (api is not null) AdatokMegjelenitese(await api.Frissites());
+        if (api is not null) DisplayData(await api.FetchDashboardAsync());
     }
 
-    private void AdatokMegjelenitese(SzemelyzetiAdatok adatok)
+    private void DisplayData(SzemelyzetiAdatok adatok)
     {
         var rendeles = (RendelesTabla.SelectedItem as Rendeles)?.Azonosito;
         var etel = (EtelTabla.SelectedItem as Etel)?.Azonosito;
@@ -140,23 +140,23 @@ public partial class Foablak : Window
         JegyTabla.SelectedItem = adatok.Jegyek.Find(sor => sor.Azonosito == jegy);
     }
 
-    private void RendelesKijelolve(object kuldo, SelectionChangedEventArgs esemeny)
+    private void OnOrderSelected(object kuldo, SelectionChangedEventArgs esemeny)
     {
         RendelesReszletek.DataContext = RendelesTabla.SelectedItem;
-        FeluletFrissitese();
+        UpdateControls();
     }
 
-    private void EtelKijelolve(object kuldo, SelectionChangedEventArgs esemeny) => FeluletFrissitese();
+    private void OnDishSelected(object kuldo, SelectionChangedEventArgs esemeny) => UpdateControls();
 
-    private void JegyKijelolve(object kuldo, SelectionChangedEventArgs esemeny)
+    private void OnTicketSelected(object kuldo, SelectionChangedEventArgs esemeny)
     {
         var jegy = JegyTabla.SelectedItem as Jegy;
         JegyReszletek.DataContext = jegy;
         JegyValasz.Text = jegy?.Valasz ?? "";
-        FeluletFrissitese();
+        UpdateControls();
     }
 
-    private void FeluletFrissitese()
+    private void UpdateControls()
     {
         var kapcsolodva = api is not null;
         var szerkesztheto = kapcsolodva && !foglalt;

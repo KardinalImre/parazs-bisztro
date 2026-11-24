@@ -33,10 +33,10 @@
           <PasswordBox x:Name="SzemelyzetiKulcs" AutomationProperties.AutomationId="SzemelyzetiKulcs"/>
         </StackPanel>
         <WrapPanel Grid.Column="2" VerticalAlignment="Bottom">
-          <Button x:Name="BelepesGomb" Content="Belépés" Click="Belepes" Style="{StaticResource KiemeltGomb}"
+          <Button x:Name="BelepesGomb" Content="Belépés" Click="OnSignInClick" Style="{StaticResource KiemeltGomb}"
                   AutomationProperties.AutomationId="BelepesGomb"/>
-          <Button x:Name="FrissitesGomb" Content="Frissítés" Click="Frissites" IsEnabled="False"/>
-          <Button x:Name="KilepesGomb" Content="Kilépés" Click="Kilepes" IsEnabled="False" Margin="0"/>
+          <Button x:Name="FrissitesGomb" Content="Frissítés" Click="OnRefreshClick" IsEnabled="False"/>
+          <Button x:Name="KilepesGomb" Content="Kilépés" Click="OnSignOutClick" IsEnabled="False" Margin="0"/>
         </WrapPanel>
       </Grid>
     </Border>
@@ -57,7 +57,7 @@
             <ColumnDefinition Width="12"/>
             <ColumnDefinition Width="2*"/>
           </Grid.ColumnDefinitions>
-          <DataGrid x:Name="RendelesTabla" SelectionChanged="RendelesKijelolve" AutomationProperties.Name="Rendelések">
+          <DataGrid x:Name="RendelesTabla" SelectionChanged="OnOrderSelected" AutomationProperties.Name="Rendelések">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Vendég" Binding="{Binding VendegNeve}" Width="*"/>
               <DataGridTextColumn Header="Állapot" Binding="{Binding AllapotNev}" Width="105"/>
@@ -79,8 +79,8 @@
               <TextBlock Text="{Binding Megjegyzes}" TextWrapping="Wrap" Margin="14,3"/>
               <TextBlock Text="{Binding Fizetes}" Margin="14,3"/>
               <WrapPanel Margin="14,12">
-                <Button x:Name="RendelesKovetkezo" Style="{StaticResource KiemeltGomb}" Click="RendelesTovabb"/>
-                <Button x:Name="RendelesTorlesGomb" Content="Törlés" Click="RendelesTorlese"/>
+                <Button x:Name="RendelesKovetkezo" Style="{StaticResource KiemeltGomb}" Click="OnAdvanceOrderClick"/>
+                <Button x:Name="RendelesTorlesGomb" Content="Törlés" Click="OnCancelOrderClick"/>
               </WrapPanel>
             </StackPanel>
           </ScrollViewer>
@@ -89,9 +89,9 @@
       <TabItem Header="Étel-elérhetőség">
         <DockPanel Margin="10">
           <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
-            <Button x:Name="EtelGomb" HorizontalAlignment="Left" Click="EtelValtasa"/>
+            <Button x:Name="EtelGomb" HorizontalAlignment="Left" Click="OnToggleDishClick"/>
           </StackPanel>
-          <DataGrid x:Name="EtelTabla" SelectionChanged="EtelKijelolve" AutomationProperties.Name="Étel-elérhetőség">
+          <DataGrid x:Name="EtelTabla" SelectionChanged="OnDishSelected" AutomationProperties.Name="Étel-elérhetőség">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Étel" Binding="{Binding Nev}" Width="2*"/>
               <DataGridTextColumn Header="Leírás" Binding="{Binding Leiras}" Width="3*"/>
@@ -108,7 +108,7 @@
             <ColumnDefinition Width="12"/>
             <ColumnDefinition Width="*"/>
           </Grid.ColumnDefinitions>
-          <DataGrid x:Name="JegyTabla" SelectionChanged="JegyKijelolve" AutomationProperties.Name="Ügyfélszolgálati jegyek">
+          <DataGrid x:Name="JegyTabla" SelectionChanged="OnTicketSelected" AutomationProperties.Name="Ügyfélszolgálati jegyek">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Tárgy" Binding="{Binding Targy}" Width="*"/>
               <DataGridTextColumn Header="Állapot" Binding="{Binding AllapotNev}" Width="115"/>
@@ -124,8 +124,8 @@
               <TextBox x:Name="JegyValasz" AutomationProperties.AutomationId="JegyValasz" AcceptsReturn="True"
                        TextWrapping="Wrap" Height="108" MaxLength="2000" VerticalScrollBarVisibility="Auto" Margin="14,0"/>
               <WrapPanel Margin="14,12">
-                <Button x:Name="ValaszGomb" Content="Válasz mentése" Click="JegyValaszMentese" Style="{StaticResource KiemeltGomb}"/>
-                <Button x:Name="LezarasGomb" Content="Ügy lezárása" Click="JegyLezarasa"/>
+                <Button x:Name="ValaszGomb" Content="Válasz mentése" Click="OnSaveReplyClick" Style="{StaticResource KiemeltGomb}"/>
+                <Button x:Name="LezarasGomb" Content="Ügy lezárása" Click="OnCloseTicketClick"/>
               </WrapPanel>
             </StackPanel>
           </ScrollViewer>

@@ -16,18 +16,18 @@ public sealed record Rendeles(Guid Azonosito, string Allapot, int Vegosszeg, str
         "atadva" => "Átadva", "torolve" => "Törölve", _ => Allapot,
     };
     public string Fizetes => FizetesiMod == "tarca" ? "Demópénztárcával fizetve" : "Fizetés átvételkor";
-    public string Osszeg => Megjelenites.Forint(Vegosszeg);
+    public string Osszeg => Megjelenites.FormatCurrency(Vegosszeg);
     public string Idopont => DateTimeOffset.TryParse(Letrehozva, out var idopont)
         ? idopont.ToLocalTime().ToString("g", Megjelenites.Magyar) : Letrehozva;
 }
 public sealed record RendelesTetel(string EtelNeve, int Mennyiseg, int Egysegar)
 {
-    public string Felirat => $"{Mennyiseg} × {EtelNeve}  ·  {Megjelenites.Forint(Egysegar)} / adag";
+    public string Felirat => $"{Mennyiseg} × {EtelNeve}  ·  {Megjelenites.FormatCurrency(Egysegar)} / adag";
 }
 public sealed record Etel(int Azonosito, string Nev, int Ar, string Leiras, bool Elerheto)
 {
     public string Elerhetoseg => Elerheto ? "Rendelhető" : "Elrejtve";
-    public string ArFelirat => Megjelenites.Forint(Ar);
+    public string ArFelirat => Megjelenites.FormatCurrency(Ar);
 }
 public sealed record Etlap(List<Etel> Etelek);
 public sealed record Jegy(Guid Azonosito, string Email, string Targy, string Uzenet,
@@ -43,7 +43,7 @@ public sealed record SzemelyzetiAdatok(List<Rendeles> Rendelesek, List<Etel> Ete
 internal static class Megjelenites
 {
     internal static readonly CultureInfo Magyar = CultureInfo.GetCultureInfo("hu-HU");
-    internal static string Forint(int osszeg) => osszeg.ToString("N0", Magyar) + " Ft";
+    internal static string FormatCurrency(int osszeg) => osszeg.ToString("N0", Magyar) + " Ft";
 }
 
 public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
@@ -53,7 +53,7 @@ public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
         BaseAddress = cim, Timeout = TimeSpan.FromSeconds(8),
     };
 
-    public static Uri CimEllenorzese(string ertek)
+    public static Uri ValidateBaseAddress(string ertek)
     {
         if (!Uri.TryCreate(ertek.Trim(), UriKind.Absolute, out var cim) ||
             (cim.Scheme != Uri.UriSchemeHttps && !(cim.IsLoopback && cim.Scheme == Uri.UriSchemeHttp)) ||
@@ -62,37 +62,37 @@ public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
         return cim;
     }
 
-    public async Task<SzemelyzetiAdatok> Frissites()
+    public async Task<SzemelyzetiAdatok> FetchDashboardAsync()
     {
-        var rendelesek = Olvas<List<Rendeles>>("rendelesek");
-        var etlap = Olvas<Etlap>("etlap");
-        var jegyek = Olvas<List<Jegy>>("jegyek");
+        var rendelesek = ReadJsonAsync<List<Rendeles>>("rendelesek");
+        var etlap = ReadJsonAsync<Etlap>("etlap");
+        var jegyek = ReadJsonAsync<List<Jegy>>("jegyek");
         await Task.WhenAll(rendelesek, etlap, jegyek);
         return new(await rendelesek, (await etlap).Etelek, await jegyek);
     }
 
-    public Task RendelesModositasa(Guid azonosito, string allapot) =>
-        Modosit($"rendelesek/{azonosito}", new { allapot });
+    public Task UpdateOrderAsync(Guid azonosito, string allapot) =>
+        PatchAsync($"rendelesek/{azonosito}", new { allapot });
 
-    public Task EtelModositasa(int azonosito, bool elerheto) =>
-        Modosit($"etelek/{azonosito}", new { elerheto });
+    public Task UpdateDishAsync(int azonosito, bool elerheto) =>
+        PatchAsync($"etelek/{azonosito}", new { elerheto });
 
-    public Task JegyModositasa(Guid azonosito, string allapot, string? valasz) =>
-        Modosit($"jegyek/{azonosito}", new { allapot, valasz });
+    public Task UpdateTicketAsync(Guid azonosito, string allapot, string? valasz) =>
+        PatchAsync($"jegyek/{azonosito}", new { allapot, valasz });
 
-    private async Task<T> Olvas<T>(string utvonal)
+    private async Task<T> ReadJsonAsync<T>(string utvonal)
     {
-        using var valasz = await Kuldes(HttpMethod.Get, utvonal, null);
+        using var valasz = await SendAsync(HttpMethod.Get, utvonal, null);
         return await valasz.Content.ReadFromJsonAsync<T>()
             ?? throw new InvalidOperationException("A szerver üres választ adott.");
     }
 
-    private async Task Modosit(string utvonal, object tartalom)
+    private async Task PatchAsync(string utvonal, object tartalom)
     {
-        using var valasz = await Kuldes(HttpMethod.Patch, utvonal, tartalom);
+        using var valasz = await SendAsync(HttpMethod.Patch, utvonal, tartalom);
     }
 
-    private async Task<HttpResponseMessage> Kuldes(HttpMethod modszer, string utvonal, object? tartalom)
+    private async Task<HttpResponseMessage> SendAsync(HttpMethod modszer, string utvonal, object? tartalom)
     {
         using var keres = new HttpRequestMessage(modszer, "/api/szemelyzet/" + utvonal);
         keres.Headers.Authorization = new AuthenticationHeaderValue("Bearer", kulcs);
@@ -101,8 +101,8 @@ public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
         if (valasz.IsSuccessStatusCode) return valasz;
         using (valasz)
         {
-            HibaVálasz? hiba = null;
-            try { hiba = await valasz.Content.ReadFromJsonAsync<HibaVálasz>(); }
+            ApiErrorResponse? hiba = null;
+            try { hiba = await valasz.Content.ReadFromJsonAsync<ApiErrorResponse>(); }
             catch (JsonException) { }
             catch (NotSupportedException) { }
             throw new InvalidOperationException(hiba?.Hiba ?? $"A kiszolgáló válaszkódja {(int)valasz.StatusCode}.");
@@ -110,6 +110,6 @@ public sealed class SzemelyzetiApi(Uri cim, string kulcs) : IDisposable
     }
 
     public void Dispose() => kliens.Dispose();
-    private sealed record HibaVálasz(string? Hiba);
+    private sealed record ApiErrorResponse(string? Hiba);
 }
 

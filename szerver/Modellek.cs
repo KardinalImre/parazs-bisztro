@@ -13,7 +13,7 @@ public sealed record RendelesOsszesito(Guid Azonosito, string Allapot, int Vegos
 public sealed record SzemelyzetiRendeles(Guid Azonosito, string Allapot, int Vegosszeg, string Letrehozva,
     IReadOnlyList<RendelesiTetel> Tetelek, string VendegNeve, string Telefonszam, string Megjegyzes, int Kedvezmeny = 0, string? Kuponkod = null, string FizetesiMod = "atvetel")
 {
-    public RendelesOsszesito Vendegnek() => new(Azonosito, Allapot, Vegosszeg, Letrehozva, Tetelek, Kedvezmeny, Kuponkod, FizetesiMod);
+    public RendelesOsszesito ToGuestView() => new(Azonosito, Allapot, Vegosszeg, Letrehozva, Tetelek, Kedvezmeny, Kuponkod, FizetesiMod);
 }
 public sealed record AllapotBemenet(string? Allapot);
 public sealed record ElerhetosegBemenet(bool? Elerheto);

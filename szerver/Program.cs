@@ -27,9 +27,9 @@ epito.Services.AddRateLimiter(beallitasok =>
 var mappa = epito.Environment.ContentRootPath;
 var alapertelmezettAdatbazis = Path.Combine(mappa, "adatok", "parazs.sqlite3");
 var adatbazisUt = Path.GetFullPath(epito.Configuration["PARAZS_ADATBAZIS"] ??
-    epito.Configuration["PARAZS_DB"] ?? AlapertelmezettAdatbazis());
+    epito.Configuration["PARAZS_DB"] ?? GetDefaultDatabasePath());
 var adattar = new EttermiAdattar(adatbazisUt);
-adattar.Inicializalas(Path.Combine(AppContext.BaseDirectory, "adatbazis"));
+adattar.Initialize(Path.Combine(AppContext.BaseDirectory, "adatbazis"));
 
 var beallitottKulcs = epito.Configuration["PARAZS_SZEMELYZETI_KULCS"] ??
     epito.Configuration["PARAZS_ADMIN_KEY"];
@@ -101,22 +101,22 @@ alkalmazas.UseStaticFiles();
 alkalmazas.UseRateLimiter();
 
 var api = alkalmazas.MapGroup("/api");
-api.ProfilVegpontokFelvetele(adattar);
-api.MapGet("/etlap", () => adattar.EtlapLekerese());
-api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => adattar.KosarOsszesitese(bemenet));
+api.MapProfileEndpoints(adattar);
+api.MapGet("/etlap", () => adattar.GetMenu());
+api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => adattar.QuoteCart(bemenet));
 api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
 {
-    var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet, ProfilVegpontok.AktualisProfil(kornyezet, adattar)?.Azonosito);
+    var (rendeles, letrejott) = adattar.CreateOrder(bemenet, ProfilVegpontok.GetCurrentProfile(kornyezet, adattar)?.Azonosito);
     return letrejott ? Results.Created($"/api/rendelesek/{rendeles.Azonosito}", rendeles) : Results.Ok(rendeles);
 });
-api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.RendelesLekerese(azonosito));
+api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.GetOrder(azonosito));
 var ugyfelszolgalat = api.MapGroup("/ugyfelszolgalat/jegyek");
 ugyfelszolgalat.MapPost("", (JegyBemenet bemenet) =>
 {
-    var (jegy, letrejott) = adattar.JegyLetrehozasa(bemenet);
+    var (jegy, letrejott) = adattar.CreateTicket(bemenet);
     return letrejott ? Results.Created($"/api/ugyfelszolgalat/jegyek/{jegy.Azonosito}", jegy) : Results.Ok(jegy);
 }).RequireRateLimiting("ugyfelszolgalat");
-ugyfelszolgalat.MapGet("/{azonosito:guid}", (Guid azonosito) => adattar.JegyLekerese(azonosito));
+ugyfelszolgalat.MapGet("/{azonosito:guid}", (Guid azonosito) => adattar.GetTicket(azonosito));
 var szemelyzet = api.MapGroup("/szemelyzet");
 szemelyzet.AddEndpointFilter(async (kornyezet, kovetkezo) =>
 {
@@ -126,16 +126,16 @@ szemelyzet.AddEndpointFilter(async (kornyezet, kovetkezo) =>
     kornyezet.HttpContext.Response.Headers.WWWAuthenticate = "Bearer";
     return Results.Json(new { hiba = "Érvénytelen vagy hiányzó személyzeti kulcs." }, statusCode: 401);
 });
-szemelyzet.MapGet("/rendelesek", () => adattar.RendelesekLekerese());
-szemelyzet.MapGet("/jegyek", () => adattar.JegyekLekerese());
+szemelyzet.MapGet("/rendelesek", () => adattar.GetStaffOrders());
+szemelyzet.MapGet("/jegyek", () => adattar.GetStaffTickets());
 szemelyzet.MapPatch("/jegyek/{azonosito:guid}", (Guid azonosito, JegyValaszBemenet bemenet) =>
-    adattar.JegyModositasa(azonosito, bemenet));
-szemelyzet.MapGet("/etlap", () => adattar.EtlapLekerese(elfogyottakkal: true));
+    adattar.UpdateTicket(azonosito, bemenet));
+szemelyzet.MapGet("/etlap", () => adattar.GetMenu(elfogyottakkal: true));
 szemelyzet.MapPatch("/rendelesek/{azonosito:guid}", (Guid azonosito, AllapotBemenet bemenet) =>
-    adattar.AllapotBeallitasa(azonosito, bemenet.Allapot));
+    adattar.UpdateOrderStatus(azonosito, bemenet.Allapot));
 szemelyzet.MapPatch("/etelek/{azonosito:int}", (int azonosito, ElerhetosegBemenet bemenet) =>
 {
-    adattar.ElerhetosegBeallitasa(azonosito, bemenet.Elerheto);
+    adattar.SetDishAvailability(azonosito, bemenet.Elerheto);
     return Results.NoContent();
 });
 
@@ -145,7 +145,7 @@ alkalmazas.MapFallbackToFile("/profil", "index.html");
 alkalmazas.MapFallbackToFile("/ugyfelszolgalat", "index.html");
 alkalmazas.Run();
 
-string AlapertelmezettAdatbazis()
+string GetDefaultDatabasePath()
 {
     if (File.Exists(alapertelmezettAdatbazis)) return alapertelmezettAdatbazis;
     var regiAdatbazis = Path.Combine(mappa, "..", "server", "data", "parazs.sqlite3");
