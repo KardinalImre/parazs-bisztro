@@ -1,70 +1,75 @@
 # Parázs Bisztró — műszaki és felhasználói dokumentáció
 
-## Cél és használati kör
+## Cél
 
-Az előrendelők telefonos diktálás nélkül állíthatják össze az elviteles rendelésüket. A személyzet egy helyen látja a tételeket, az átvételi adatokat és a rendelés állapotát. A vendég a visszaigazolásban kapott kóddal ellenőrizheti, hogy elkészült-e az étel. Az átvétel és a fizetés az étteremben történik.
+A rendszer az éttermi elviteles előrendelést és a rendelésekkel kapcsolatos kommunikációt kezeli. A fogások és az elérhetőségük adatbázisban vannak. A személyzet a saját felületéről vezeti végig a rendelést az elkészítéstől az átadásig, és válaszolhat a vendégeknek.
 
-A felület magyar nyelvű. Mindkét nézet reszponzív webalkalmazás, így ugyanaz a webes kliens használható telefonon és asztali böngészőben.
+## Vendégoldal
 
-## A vendég folyamata
+1. Az étlapon név és leírás szerint lehet keresni, ékezetek nélkül is. A találatok kategória szerint szűrhetők.
+2. A kosár megmutatja a fogások darabszámát, egységárát és részösszegét. Egy fogásból legfeljebb 20 adag, rendelésenként legfeljebb 30 különböző fogás választható. Minden sor külön törölhető.
+3. Az átvételi űrlap megnyitásakor az API az aktuális árak és elérhetőség alapján ad vissza végösszeget. A megváltozott kosarat vagy kuponkódot újból ellenőrizni kell. Leadáskor a szerver véglegesíti az összeget.
+4. A bejelentkezett vendég a névvel és telefonszámmal előtöltött űrlapot kapja. A rendelés a saját profiljában is megjelenik. Ha időközben lejár vagy megváltozik a munkamenet, a szerver újbóli bejelentkezést kér. A vendégrendelések követési kóddal ellenőrizhetők.
+5. A vendég fizethet átvételkor, vagy bejelentkezve használhatja a demópénztárcát. A próbaegyenleg 1 000, 5 000 vagy 10 000 Ft-tal tölthető fel. A jóváírás és a fizetés a helyi demó adatbázisában történik.
+6. Az ügyfélszolgálati oldalon e-mail-címmel és opcionálisan rendelési kóddal lehet üzenetet beküldeni. A kapott ügyazonosítóval ugyanitt olvasható a válasz.
 
-1. Az **Étlap** szakaszban válassz kategóriát, majd a **Kosárba** gombbal adj hozzá ételeket.
-2. A plusz és mínusz gombokkal állítsd a mennyiséget. Egy ételből legfeljebb 20 adag rendelhető, egy kosárban legfeljebb 30 különböző étel lehet. Mobilon a **Kosár** hivatkozás közvetlenül a kosárhoz ugrik.
-3. Válaszd a **Tovább az adatokhoz** gombot. Adj meg egy nevet, egy telefonszámot és igény esetén megjegyzést.
-4. A **Rendelés leadása** után a visszaigazolás mutatja a végösszeget és a követési kódot. Érdemes megőrizni a kódot.
-5. A **Rendelés követése** szakaszban az **Állapot lekérése** gomb az aktuális állapotot és a tételeket mutatja.
+A böngésző a kosár tételeinek azonosítóit és darabszámát, az utolsó rendelési kódot és az utolsó ügyazonosítót őrzi meg. A profil hét napra szóló HttpOnly, SameSite=Strict sütit kap. A szerver a munkamenet-token lenyomatát tárolja, a jelszavakat az ASP.NET Core Identity `PasswordHasher` osztályával hasheli.
 
-A böngésző a kosár tételeinek azonosítóit és mennyiségeit, illetve az utolsó követési kódot tárolja a `localStorage`-ban. A név, a telefonszám és a megjegyzés nem kerül tartós böngészőtárba.
+## Személyzeti munka
 
-## A személyzet folyamata
+A böngészős nézetet a `/szemelyzet` címen, a natív klienst a Start menü **Parázs Bisztró – Személyzet** parancsával lehet megnyitni. Mindkettő a szerver indításakor megjelenő személyzeti kulccsal használható.
 
-1. Nyisd meg a `/szemelyzet` oldalt, és írd be a szerverhez tartozó személyzeti kulcsot.
-2. A **Rendelések** lapon a legutóbbi 100 rendelés jelenik meg. A **Frissítés** lekéri az új rendeléseket és az aktuális étlapot.
-3. A szokásos folyamat **Beérkezett → Készül → Átvehető → Átadva**. Az átadásig a rendelés törölhető. Az **Átadva** és a **Törölve** végállapotok. A törlés az állapotot módosítja, a rendelés előzménye megmarad.
-4. Az **Étel elérhetősége** lapon az **Elrejtés** gomb kiveszi az ételt a vendégek kínálatából. A **Visszakapcsolás** újra rendelhetővé teszi.
-5. A **Kilépés** törli a kliens memóriájából a kulcsot és a betöltött személyzeti adatokat.
+- **Rendelések:** a legutóbbi 100 rendelés, vendégadatok, fogások, fizetési mód és végösszeg. A sorrend **Beérkezett → Készül → Átvehető → Átadva**. Átadás előtt a rendelés törölhető, ami demópénztárcás fizetésnél egyszeri jóváírást eredményez.
+- **Étel-elérhetőség:** az elfogyott étel elrejthető; visszakapcsolás után megint rendelhető.
+- **Ügyfélszolgálat:** a legutóbbi 100 jegy, az aktív ügyekkel elöl. Megválaszolható és lezárható.
+- **Frissítés:** a kliens lekéri az új rendeléseket, a jegyeket és az étlapot. A WPF-kliens mentés után is frissíti a listákat.
 
-## Komponensek
+## Komponensek és műszaki feltételek
 
-- **React 19 és Vite** — az `Alkalmazas` választ a vendég- és személyzeti nézet között. A `Rendeles` kezeli az étlapot és a rendelést, a `Szemelyzet` a személyzeti folyamatokat. A közös `api.js` küldi a JSON-kéréseket és kezeli a hálózati hibák megjelenítéséhez szükséges üzeneteket. A stílusok átrendezik az étlapot és a kosarat kisebb képernyőn.
-- **ASP.NET Core 10, C#** — a `Program.cs` regisztrálja a REST-végpontokat, kiszolgálja a lefordított React-felületet és ellenőrzi a személyzeti kulcsot. Az `RendelesiSzabalyok.cs` ellenőrzi a rendelési adatokat és az állapotátmeneteket. Az `EttermiAdattar.cs` végzi az SQL-műveleteket. A `Modellek.cs` külön típust tart fenn a nyilvános és a személyzeti rendelésnézethez.
-- **SQLite** — a `Microsoft.Data.Sqlite` adatszolgáltató paraméterezett SQL-parancsokat használ. Az idegen kulcsok ellenőrzése aktív; a WAL mód a párhuzamos olvasást segíti.
+- **React 19 és Vite** a magyar, reszponzív vendég- és webes személyzeti nézethez. A `kliens/forras/api.js` közös JSON-klienst ad.
+- **ASP.NET Core 10 és C#** a REST-erőforrásokhoz, validációhoz, árkalkulációhoz és jogosultságokhoz. A saját C#-metódusok angol nevűek; a megjelenített szövegek, a REST-címek és a JSON-mezők magyarok.
+- **SQLite** helyi fájlalapú adattár, paraméterezett SQL-parancsokkal és engedélyezett idegen kulcsokkal. A rendelés fejléce, tételei, a kupon kedvezménye és a tárcaterhelés egy tranzakcióban mentődik.
+- **WPF, .NET 10 és WiX** a Windows x64 személyzeti alkalmazáshoz és MSI-telepítőhöz. A WPF JSON-on keresztül éri el a szervert. Helyi HTTP vagy HTTPS alapcímet fogad el, a kulcsot a kliens memóriájában tartja.
+- Szerverindításhoz .NET 10 SDK, Node.js 22.12+ vagy 24.x, npm és korszerű böngésző kell. A [README](../README.md) tartalmazza a parancsokat.
 
-A React-kliens HTTP/JSON-kéréseket küld a C# API-nak. Az API ellenőrzi a bemenetet, végrehajtja az adatbázis-műveletet, majd HTTP státuszkóddal és megfelelő adattartalommal válaszol. A kliens lefordítása után a kliens és az API azonos eredetről kerül kiszolgálásra.
+A `PARAZS_ADATBAZIS` másik SQLite-fájlra mutathat. A `PARAZS_SZEMELYZETI_KULCS` 16–128 szóköz nélküli, látható ASCII karakterből állhat. Enélkül a szerver friss kulcsot generál. A szerver alapértelmezésben a `127.0.0.1:5080` címen érhető el. Telefonos vizsgabemutatóhoz megbízható helyi hálózaton a `-- --urls http://0.0.0.0:5080` kapcsolóval indítható. A telefonról a számítógép helyi IP-címét kell megnyitni.
+
+A csomag fiktív adatokkal történő vizsgabemutatóra készült. Éles használathoz HTTPS, személyenkénti személyzeti jogosultság, adatmegőrzési és mentési eljárás szükséges.
 
 ## REST-végpontok
 
-- **GET `/api/etlap`** — kategóriák és rendelhető ételek. Válasz 200.
-- **POST `/api/rendelesek`** — rendelés leadása. Új rendelés 201 és `Location` fejléc. Azonos kérés újraküldése 200, módosított tartalom ugyanazzal a kérésazonosítóval 409.
-- **GET `/api/rendelesek/{azonosito}`** — rendelési állapot, tételek és ár személyes adatok nélkül. Válasz 200 vagy 404.
-- **GET `/api/szemelyzet/rendelesek`** — a legutóbbi rendelések átvételi adatokkal. Válasz 200.
-- **PATCH `/api/szemelyzet/rendelesek/{azonosito}`** — állapotváltás, például `{"allapot":"keszul"}`. Válasz 200, ismeretlen állapotnál 400, nem létező rendelésnél 404, tiltott átmenetnél 409.
-- **GET `/api/szemelyzet/etlap`** — a teljes étlap. Válasz 200.
-- **PATCH `/api/szemelyzet/etelek/{azonosito}`** — elérhetőség állítása `{"elerheto":false}` vagy `{"elerheto":true}` adattal. Válasz 204, hiányzó mezőnél 400, ismeretlen ételnél 404.
+- **GET `/api/etlap`** — rendelhető ételek és kategóriák.
+- **POST `/api/rendelesek/osszesites`** — tételek és opcionális kupon alapján részösszeg, kedvezmény és végösszeg.
+- **POST `/api/rendelesek`** — rendelés mentése. Új kérés 201, azonos tartalom újraküldése 200. Eltérő végösszegre vagy eltérő tartalmú ismétlésre 409, hibás kuponra vagy elégtelen tárcaegyenlegre 422 érkezik.
+- **GET `/api/rendelesek/{azonosito}`** — állapot, tételek és fizetés személyes adatok nélkül.
+- **GET, PATCH `/api/profil`** — aktuális profil és a név, telefonszám módosítása.
+- **POST `/api/profil/regisztracio`**, **POST `/api/profil/belepes`**, **DELETE `/api/profil/munkamenet`** — fiók és munkamenet.
+- **GET `/api/profil/rendelesek`** — a bejelentkezett vendég saját rendelései.
+- **GET `/api/profil/tarca`**, **POST `/api/profil/tarca/feltoltesek`** — próbaegyenleg, tranzakciók és feltöltés.
+- **POST `/api/ugyfelszolgalat/jegyek`**, **GET `/api/ugyfelszolgalat/jegyek/{azonosito}`** — jegyküldés és követés.
+- **GET `/api/szemelyzet/rendelesek`**, **PATCH `/api/szemelyzet/rendelesek/{azonosito}`** — a rendelések megtekintése és állapotuk módosítása.
+- **GET `/api/szemelyzet/etlap`**, **PATCH `/api/szemelyzet/etelek/{azonosito}`** — teljes étlap és elérhetőség.
+- **GET `/api/szemelyzet/jegyek`**, **PATCH `/api/szemelyzet/jegyek/{azonosito}`** — jegyek, válasz és lezárás.
 
-A `/api/szemelyzet/` végpontokhoz `Authorization: Bearer <személyzeti kulcs>` fejléc szükséges. Érvénytelen vagy hiányzó kulccsal a válasz 401. JSON törzs küldéséhez az `application/json` típust kell használni.
+A személyzeti erőforrások `Authorization: Bearer <személyzeti kulcs>` fejlécet kérnek. Az azonosításhoz szükséges profilvégpontok bejelentkezés nélkül 401-et adnak. Az ügyazonosító és a rendeléskövetési kód véletlenszerű UUID.
 
-Példa a rendelési kérés törzsére:
+Példa a rendelési kérésre:
 
 ```json
 {
   "keresAzonosito": "c0a801d5-481d-4dd8-b026-9b377cd2ff3d",
   "vendegNeve": "Minta Vendég",
   "telefonszam": "+36 30 555 0100",
-  "megjegyzes": "",
-  "tetelek": [{ "etelAzonosito": 1, "mennyiseg": 2 }, { "etelAzonosito": 9, "mennyiseg": 1 }]
+  "tetelek": [{ "etelAzonosito": 1, "mennyiseg": 1 }],
+  "kuponkod": "PARAZS10",
+  "vartVegosszeg": 3861,
+  "fizetesiMod": "atvetel"
 }
 ```
 
-## Adatmodell és működési szabályok
+## Adatbázis
 
-- A `kategoriak` kategóriáit a `etelek` fogásai hivatkozzák. A `etelek` tárolja a nevet, a leírást, az egész forintban megadott árat és az elérhetőséget.
-- Az `rendelesek` tartalmazza a külön generált követési azonosítót, az ismételt küldéshez használt kérésazonosítót és tartalomlenyomatot, az átvételi adatokat, az állapotot, a végösszeget és az UTC időbélyeget.
-- Az `rendelesi_tetelek` összeköti a rendelést az ételekkel. Az étel neve és az egységára a leadáskor kerül a tételbe, így későbbi étlapváltozás után is az eredeti adatok jelennek meg.
-- Leadáskor a szerver a rendelhető ételek aktuális árából számítja az összeget. A rendelési fej és a tételek egy tranzakcióban kerülnek mentésre.
-- A kliens azonos űrlaptartalommal újrapróbált beküldéskor újrahasználja a kérésazonosítót. Az egyedi adatbáziskulcs és a tranzakció biztosítja, hogy a párhuzamosan beérkező azonos kérésekből egy rendelés legyen.
-
-A táblák mezőit és kapcsolatait az [adatbázismodell-diagram](ADATBAZIS.svg) mutatja. Az [SQL-export](../adatbazis/adatbazis-export.sql) a sémát és a mintaétlapot tartalmazza. Egy új adatbázisba az SQLite parancssorából is betölthető:
+Az [adatbázisdiagram](ADATBAZIS.svg) bemutatja az étlap, a rendelések, a profilok, a munkamenetek, a kuponok, a pénztárcanapló és az ügyfélszolgálat tizenegy tábláját. A [visszatölthető SQL-export](../adatbazis/adatbazis-export.sql) sémát, tíz mintaételt és két mintakupont tartalmaz.
 
 ```text
 sqlite3 parazs.sqlite3
@@ -73,22 +78,7 @@ sqlite> .tables
 sqlite> .quit
 ```
 
-A fenti példát a projekt gyökerében futtasd. Az export önálló visszaállításához SQLite parancssor kell. Az alkalmazás induláskor a beépített .NET-adatszolgáltatóval tölti be ugyanezt az exportot, amihez külön SQLite-program nem szükséges.
-
-## Frissítés a korábbi kiadásról
-
-A magyarított kiadás az első indításkor tranzakcióban átveszi az angol nevű táblákból az étlapot, a rendeléseket, a tételeket és az állapotokat. A korábbi követési kódok tovább használhatók. Ha a régi adatbázis a projekt mappájában maradt a `server/data/parazs.sqlite3` útvonalon, a szerver felismeri. Ha máshova bontottad ki a csomagot, állítsd le a régi szervert, másold az adatbázist a `szerver/adatok/parazs.sqlite3` helyre, vagy add meg az adatbázis másolatának teljes útvonalát a `PARAZS_ADATBAZIS` változóban.
-
-A korábbi `/admin` böngészőcím átirányít a `/szemelyzet` oldalra. Saját API-kliens esetén a fenti magyar végpontokra és JSON-mezőkre kell átállni. A böngésző az előző kiadásból megmaradt kosarat és követési kódot is beolvassa azonos webcímen.
-
-## Műszaki feltételek és beállítások
-
-- .NET 10 SDK, Node.js 22.12+ vagy 24.x, npm, valamint korszerű böngésző.
-- Alapértelmezett cím `http://127.0.0.1:5080`. A fejlesztői Vite-szerverhez futtasd a szerver mellett az `npm --prefix kliens run fejlesztes` parancsot. A Vite a `/api` kéréseket az 5080-as portra továbbítja.
-- A `PARAZS_ADATBAZIS` környezeti változóval másik SQLite-fájl adható meg, lehetőleg abszolút elérési úttal.
-- A `PARAZS_SZEMELYZETI_KULCS` változóval tartós kulcs állítható be, 16–128 szóköz nélküli, látható ASCII karakterrel. Enélkül a program minden induláskor új kulcsot ír a terminálra.
-- Telefonos bemutatóhoz megbízható helyi hálózaton futtasd a `dotnet run --project szerver/Parazs.csproj --no-launch-profile -- --urls http://0.0.0.0:5080` parancsot. A telefonon a gazdagép helyi IP-címét és az 5080-as portot nyisd meg. Ehhez a tűzfalnak engednie kell a helyi kapcsolatot.
-- A csomag vizsgabemutatóra, fiktív adatokhoz készült. Éles használat előtt HTTPS, személyenkénti hozzáférés, mentési eljárás és az ügyféladatok megőrzési szabályai szükségesek.
+Az alkalmazás a beépített SQLite-adatszolgáltatójával automatikusan futtatja ugyanezt az exportot. Régi SQLite-fájl használatakor add meg a fájl másolatát a `PARAZS_ADATBAZIS` változóban. A korai, angol táblanevű sémát a szerver tranzakcióban frissíti. A korábbi rendelések és követési kódjaik megmaradnak. A profil előzményei a bejelentkezve leadott rendelésekből épülnek fel.
 
 ## Projektadatok a leadáshoz
 
@@ -97,11 +87,13 @@ A korábbi `/admin` böngészőcím átirányít a `/szemelyzet` oldalra. Saját
 - Tényleges munkamegosztás és közös ellenőrzés — [kitöltendő]
 - Leadás dátuma — [kitöltendő]
 
-A fejléc pizzafotója a projekthez készült generált illusztráció.
+A nyitóoldal ételfotója a projekthez készült generált illusztráció.
 
 ## Technológiai források
 
-- [ASP.NET Core Minimal API — Microsoft Learn](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis?view=aspnetcore-10.0)
-- [Microsoft.Data.Sqlite — Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/)
-- [Vite — összeállítási és futtatási követelmények](https://vite.dev/guide/)
+- [ASP.NET Core Minimal API](https://learn.microsoft.com/aspnet/core/fundamentals/minimal-apis)
+- [Microsoft.Data.Sqlite](https://learn.microsoft.com/dotnet/standard/data/sqlite/)
+- [Vite útmutató](https://vite.dev/guide/)
+- [.NET Desktop SDK és WPF](https://learn.microsoft.com/dotnet/core/project-sdk/msbuild-props-desktop)
+- [WiX Toolset](https://docs.firegiant.com/wix/using-wix/)
 

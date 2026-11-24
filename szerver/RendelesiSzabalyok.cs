@@ -18,7 +18,7 @@ internal static class RendelesiSzabalyok
         ["torolve"] = [],
     };
 
-    public static void AtmenetEllenorzese(string jelenlegi, string? kovetkezo)
+    public static void ValidateTransition(string jelenlegi, string? kovetkezo)
     {
         if (kovetkezo is null || !Atmenetek.ContainsKey(kovetkezo))
             throw new KeresHiba(400, "Ismeretlen rendelési állapot.");
@@ -26,20 +26,20 @@ internal static class RendelesiSzabalyok
             throw new KeresHiba(409, "A kért állapot ebből az állapotból nem választható.");
     }
 
-    public static EllenorzottRendeles Ellenorzes(RendelesBemenet bemenet)
+    public static EllenorzottRendeles ValidateOrder(RendelesBemenet bemenet)
     {
-        var nev = SzovegMezo(bemenet.VendegNeve, "Név", 2, 80);
-        var telefonszam = TelefonszamEllenorzese(bemenet.Telefonszam);
-        var megjegyzes = SzovegMezo(bemenet.Megjegyzes ?? "", "Megjegyzés", 0, 300);
+        var nev = ValidateText(bemenet.VendegNeve, "Név", 2, 80);
+        var telefonszam = ValidatePhone(bemenet.Telefonszam);
+        var megjegyzes = ValidateText(bemenet.Megjegyzes ?? "", "Megjegyzés", 0, 300);
         if (bemenet.KeresAzonosito == Guid.Empty)
             throw new KeresHiba(400, "Érvényes kérésazonosító szükséges.");
-        var mennyisegek = TetelekEllenorzese(bemenet.Tetelek);
+        var mennyisegek = ValidateItems(bemenet.Tetelek);
         // A korábbi rendelések lenyomatát az eredeti mezőnevekkel kell újraszámolni.
         var lenyomat = JsonSerializer.SerializeToUtf8Bytes(new
         {
             name = nev, phone = telefonszam, note = megjegyzes, quantities = mennyisegek,
         });
-        var kuponkod = KuponkodEllenorzese(bemenet.Kuponkod);
+        var kuponkod = NormalizeCouponCode(bemenet.Kuponkod);
         var ujjlenyomat = Convert.ToHexString(SHA256.HashData(lenyomat));
         if (kuponkod is not null)
             ujjlenyomat = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ujjlenyomat + ":" + kuponkod)));
@@ -51,7 +51,7 @@ internal static class RendelesiSzabalyok
         return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek, ujjlenyomat, kuponkod, fizetesiMod);
     }
 
-    internal static string? KuponkodEllenorzese(string? ertek)
+    internal static string? NormalizeCouponCode(string? ertek)
     {
         if (string.IsNullOrWhiteSpace(ertek)) return null;
         var kod = ertek.Trim().ToUpperInvariant();
@@ -60,7 +60,7 @@ internal static class RendelesiSzabalyok
         return kod;
     }
 
-    public static SortedDictionary<int, int> TetelekEllenorzese(List<RendelesiTetelBemenet?>? tetelek)
+    public static SortedDictionary<int, int> ValidateItems(List<RendelesiTetelBemenet?>? tetelek)
     {
         if (tetelek is null || tetelek.Count is < 1 or > 30)
             throw new KeresHiba(400, "A rendelés 1–30 különböző tételt tartalmazhat.");
@@ -76,15 +76,15 @@ internal static class RendelesiSzabalyok
         return mennyisegek;
     }
 
-    internal static string TelefonszamEllenorzese(string? ertek)
+    internal static string ValidatePhone(string? ertek)
     {
-        var telefonszam = SzovegMezo(ertek, "Telefonszám", 7, 25);
+        var telefonszam = ValidateText(ertek, "Telefonszám", 7, 25);
         if (!Regex.IsMatch(telefonszam, @"^\+?[0-9 ().-]+$") || telefonszam.Count(char.IsAsciiDigit) is < 7 or > 15)
             throw new KeresHiba(400, "Adj meg érvényes telefonszámot.");
         return telefonszam;
     }
 
-    internal static string SzovegMezo(string? ertek, string mezo, int also, int felso)
+    internal static string ValidateText(string? ertek, string mezo, int also, int felso)
     {
         var tisztitott = ertek?.Trim();
         if (tisztitott is null || tisztitott.Length < also || tisztitott.Length > felso)

@@ -1,0 +1,12 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <OutputName>Parazs-Szemelyzet-win-x64</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <KliensKimenet>$(MSBuildThisFileDirectory)obj\wpf-$(Configuration)\</KliensKimenet>
+    <DefineConstants>KliensFajl=$(KliensKimenet)Parazs.Szemelyzet.exe</DefineConstants>
+  </PropertyGroup>
+  <Target Name="SzemelyzetiAlkalmazasKiadadasa" BeforeTargets="BeforeBuild">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\szemelyzet-wpf\Parazs.Szemelyzet.csproj&quot; -c $(Configuration) -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=None -o &quot;$(KliensKimenet).&quot;" />
+  </Target>
+</Project>

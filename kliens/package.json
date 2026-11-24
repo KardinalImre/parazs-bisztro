@@ -7,7 +7,8 @@
     "epites": "vite build",
     "fejlesztes": "vite",
     "teszt:api": "node --experimental-sqlite --test tesztek/api.test.mjs",
-    "teszt:bongeszo": "node --test tesztek/bongeszo.test.mjs"
+    "teszt:bongeszo": "node --test tesztek/bongeszo.test.mjs",
+    "teszt:wpf": "node --test tesztek/wpf-api.test.mjs"
   },
   "dependencies": { "react": "19.3.1", "react-dom": "19.3.1" },
   "devDependencies": { "playwright": "1.65.1", "vite": "7.3.8" }

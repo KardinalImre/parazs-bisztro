@@ -9,34 +9,34 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         DataSource = eleresiUt, ForeignKeys = true, DefaultTimeout = 5
     }.ToString();
 
-    public void Inicializalas(string sqlMappa)
+    public void Initialize(string sqlMappa)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(eleresiUt)!);
-        using var adatbazis = KapcsolatMegnyitasa();
-        using var naplo = Parancs(adatbazis, null, "PRAGMA journal_mode = WAL");
+        using var adatbazis = OpenConnection();
+        using var naplo = CreateCommand(adatbazis, null, "PRAGMA journal_mode = WAL");
         naplo.ExecuteScalar();
         using var tranzakcio = adatbazis.BeginTransaction();
-        using var ellenorzes = Parancs(adatbazis, tranzakcio,
+        using var ellenorzes = CreateCommand(adatbazis, tranzakcio,
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'categories'");
         var regiSema = ellenorzes.ExecuteScalar() is not null;
         if (regiSema)
-            SqlFajlVegrehajtasa(adatbazis, tranzakcio, Path.Combine(sqlMappa, "regi-nevek.sql"));
-        SqlFajlVegrehajtasa(adatbazis, tranzakcio, Path.Combine(sqlMappa, "adatbazis-export.sql"));
+            ExecuteSqlFile(adatbazis, tranzakcio, Path.Combine(sqlMappa, "regi-nevek.sql"));
+        ExecuteSqlFile(adatbazis, tranzakcio, Path.Combine(sqlMappa, "adatbazis-export.sql"));
         if (regiSema)
-            SqlFajlVegrehajtasa(adatbazis, tranzakcio, Path.Combine(sqlMappa, "regi-adatok-atvetele.sql"));
+            ExecuteSqlFile(adatbazis, tranzakcio, Path.Combine(sqlMappa, "regi-adatok-atvetele.sql"));
         tranzakcio.Commit();
     }
 
-    public Etlap EtlapLekerese(bool elfogyottakkal = false)
+    public Etlap GetMenu(bool elfogyottakkal = false)
     {
-        using var adatbazis = KapcsolatMegnyitasa();
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
-        using var kategoriaParancs = Parancs(adatbazis, tranzakcio, "SELECT azonosito, nev FROM kategoriak ORDER BY sorrend, azonosito");
+        using var kategoriaParancs = CreateCommand(adatbazis, tranzakcio, "SELECT azonosito, nev FROM kategoriak ORDER BY sorrend, azonosito");
         var kategoriak = new List<Kategoria>();
         using (var sorok = kategoriaParancs.ExecuteReader())
             while (sorok.Read()) kategoriak.Add(new(sorok.GetInt32(0), sorok.GetString(1)));
 
-        using var etelParancs = Parancs(adatbazis, tranzakcio, """
+        using var etelParancs = CreateCommand(adatbazis, tranzakcio, """
             SELECT azonosito, kategoria_azonosito, nev, leiras, ar, elerheto FROM etelek
             WHERE elerheto = 1 OR $reszletes ORDER BY azonosito
             """, ("$reszletes", elfogyottakkal));
@@ -49,50 +49,50 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         return new(kategoriak, etelek);
     }
 
-    public void ElerhetosegBeallitasa(int etelAzonosito, bool? elerheto)
+    public void SetDishAvailability(int etelAzonosito, bool? elerheto)
     {
         if (elerheto is null) throw new KeresHiba(400, "Az elérhetőség megadása kötelező.");
-        using var adatbazis = KapcsolatMegnyitasa();
-        using var modositas = Parancs(adatbazis, null, "UPDATE etelek SET elerheto = $elerheto WHERE azonosito = $azonosito",
+        using var adatbazis = OpenConnection();
+        using var modositas = CreateCommand(adatbazis, null, "UPDATE etelek SET elerheto = $elerheto WHERE azonosito = $azonosito",
             ("$elerheto", elerheto.Value), ("$azonosito", etelAzonosito));
         if (modositas.ExecuteNonQuery() == 0) throw new KeresHiba(404, "Az étel nem található.");
     }
 
-    public KosarOsszesites KosarOsszesitese(OsszesitesBemenet bemenet)
+    public KosarOsszesites QuoteCart(OsszesitesBemenet bemenet)
     {
-        var mennyisegek = RendelesiSzabalyok.TetelekEllenorzese(bemenet.Tetelek);
-        using var adatbazis = KapcsolatMegnyitasa();
+        var mennyisegek = RendelesiSzabalyok.ValidateItems(bemenet.Tetelek);
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
-        var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, mennyisegek);
-        var osszesites = Osszesites(adatbazis, tranzakcio, tetelek, RendelesiSzabalyok.KuponkodEllenorzese(bemenet.Kuponkod));
+        var tetelek = ReadAvailableItems(adatbazis, tranzakcio, mennyisegek);
+        var osszesites = CalculateQuote(adatbazis, tranzakcio, tetelek, RendelesiSzabalyok.NormalizeCouponCode(bemenet.Kuponkod));
         tranzakcio.Commit();
         return osszesites;
     }
 
-    public (RendelesOsszesito Rendeles, bool Letrejott) RendelesLetrehozasa(RendelesBemenet bemenet, Guid? profilAzonosito)
+    public (RendelesOsszesito Rendeles, bool Letrejott) CreateOrder(RendelesBemenet bemenet, Guid? profilAzonosito)
     {
-        var keres = RendelesiSzabalyok.Ellenorzes(bemenet);
-        using var adatbazis = KapcsolatMegnyitasa();
+        var keres = RendelesiSzabalyok.ValidateOrder(bemenet);
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction();
-        var meglevo = KeresMegkeresese(adatbazis, tranzakcio, keres.KeresAzonosito);
+        var meglevo = FindOrderRequest(adatbazis, tranzakcio, keres.KeresAzonosito);
         if (meglevo is { } korabbi)
         {
             if (korabbi.Lenyomat != keres.Lenyomat || korabbi.ProfilAzonosito != profilAzonosito)
                 throw new KeresHiba(409, "Ezzel a kérésazonosítóval már más tartalmú rendelés érkezett.");
-            var rendeles = RendelesOlvasasa(adatbazis, tranzakcio, korabbi.Azonosito).Vendegnek();
+            var rendeles = ReadOrder(adatbazis, tranzakcio, korabbi.Azonosito).ToGuestView();
             tranzakcio.Commit();
             return (rendeles, false);
         }
 
-        var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, keres.Mennyisegek);
+        var tetelek = ReadAvailableItems(adatbazis, tranzakcio, keres.Mennyisegek);
         var azonosito = Guid.NewGuid();
-        var osszesites = Osszesites(adatbazis, tranzakcio, tetelek, keres.Kuponkod);
+        var osszesites = CalculateQuote(adatbazis, tranzakcio, tetelek, keres.Kuponkod);
         var vegosszeg = osszesites.Vegosszeg;
         if (bemenet.VartVegosszeg is int vart && vart != vegosszeg)
             throw new KeresHiba(409, "A rendelés ára megváltozott. Ellenőrizd az új végösszeget.");
         var idopont = DateTimeOffset.UtcNow.ToString("O");
 
-        using var beszuras = Parancs(adatbazis, tranzakcio, """
+        using var beszuras = CreateCommand(adatbazis, tranzakcio, """
             INSERT INTO rendelesek (azonosito, keres_azonosito, keres_lenyomat, vendeg_neve, telefonszam, megjegyzes, vegosszeg, letrehozva)
             VALUES ($azonosito, $keres, $lenyomat, $nev, $telefonszam, $megjegyzes, $vegosszeg, $idopont)
             """, ("$azonosito", azonosito.ToString()), ("$keres", keres.KeresAzonosito.ToString()), ("$lenyomat", keres.Lenyomat),
@@ -101,18 +101,18 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         beszuras.ExecuteNonQuery();
         if (profilAzonosito is Guid profil)
         {
-            using var hozzarendeles = Parancs(adatbazis, tranzakcio, """
+            using var hozzarendeles = CreateCommand(adatbazis, tranzakcio, """
                 INSERT INTO rendeles_profilok (rendeles_azonosito, profil_azonosito) VALUES ($rendeles, $profil)
                 """, ("$rendeles", azonosito.ToString()), ("$profil", profil.ToString()));
             hozzarendeles.ExecuteNonQuery();
         }
 
-        KuponMentese(adatbazis, tranzakcio, azonosito, osszesites);
+        SaveDiscount(adatbazis, tranzakcio, azonosito, osszesites);
         if (keres.FizetesiMod == "tarca")
-            TarcasFizetes(adatbazis, tranzakcio, profilAzonosito, azonosito, vegosszeg);
+            ChargeWallet(adatbazis, tranzakcio, profilAzonosito, azonosito, vegosszeg);
         foreach (var tetel in tetelek)
         {
-            using var tetelSor = Parancs(adatbazis, tranzakcio, """
+            using var tetelSor = CreateCommand(adatbazis, tranzakcio, """
                 INSERT INTO rendelesi_tetelek (rendeles_azonosito, etel_azonosito, etel_neve, egysegar, mennyiseg)
                 VALUES ($rendeles, $etel, $nev, $ar, $mennyiseg)
                 """, ("$rendeles", azonosito.ToString()), ("$etel", tetel.EtelAzonosito), ("$nev", tetel.EtelNeve),
@@ -123,64 +123,64 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         return (new(azonosito, "beerkezett", vegosszeg, idopont, tetelek, osszesites.Kedvezmeny, osszesites.Kuponkod, keres.FizetesiMod), true);
     }
 
-    public RendelesOsszesito RendelesLekerese(Guid azonosito)
+    public RendelesOsszesito GetOrder(Guid azonosito)
     {
-        using var adatbazis = KapcsolatMegnyitasa();
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
-        var rendeles = RendelesOlvasasa(adatbazis, tranzakcio, azonosito).Vendegnek();
+        var rendeles = ReadOrder(adatbazis, tranzakcio, azonosito).ToGuestView();
         tranzakcio.Commit();
         return rendeles;
     }
 
-    public IReadOnlyList<RendelesOsszesito> RendelesiElozmenyek(Guid profilAzonosito)
+    public IReadOnlyList<RendelesOsszesito> GetOrderHistory(Guid profilAzonosito)
     {
-        using var adatbazis = KapcsolatMegnyitasa();
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
-        using var lekerdezes = Parancs(adatbazis, tranzakcio, """
+        using var lekerdezes = CreateCommand(adatbazis, tranzakcio, """
             SELECT r.azonosito FROM rendelesek r JOIN rendeles_profilok p ON p.rendeles_azonosito = r.azonosito
             WHERE p.profil_azonosito = $profil ORDER BY r.letrehozva DESC, r.azonosito LIMIT 100
             """, ("$profil", profilAzonosito.ToString()));
         var azonositok = new List<Guid>();
         using (var sorok = lekerdezes.ExecuteReader())
             while (sorok.Read()) azonositok.Add(Guid.Parse(sorok.GetString(0)));
-        var rendelesek = azonositok.Select(id => RendelesOlvasasa(adatbazis, tranzakcio, id).Vendegnek()).ToArray();
+        var rendelesek = azonositok.Select(id => ReadOrder(adatbazis, tranzakcio, id).ToGuestView()).ToArray();
         tranzakcio.Commit();
         return rendelesek;
     }
 
-    public IReadOnlyList<SzemelyzetiRendeles> RendelesekLekerese()
+    public IReadOnlyList<SzemelyzetiRendeles> GetStaffOrders()
     {
-        using var adatbazis = KapcsolatMegnyitasa();
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
         var azonositok = new List<Guid>();
-        using var lekerdezes = Parancs(adatbazis, tranzakcio, "SELECT azonosito FROM rendelesek ORDER BY letrehozva DESC, azonosito LIMIT 100");
+        using var lekerdezes = CreateCommand(adatbazis, tranzakcio, "SELECT azonosito FROM rendelesek ORDER BY letrehozva DESC, azonosito LIMIT 100");
         using (var sorok = lekerdezes.ExecuteReader())
             while (sorok.Read()) azonositok.Add(Guid.Parse(sorok.GetString(0)));
-        var eredmeny = azonositok.Select(azonosito => RendelesOlvasasa(adatbazis, tranzakcio, azonosito)).ToArray();
+        var eredmeny = azonositok.Select(azonosito => ReadOrder(adatbazis, tranzakcio, azonosito)).ToArray();
         tranzakcio.Commit();
         return eredmeny;
     }
 
-    public SzemelyzetiRendeles AllapotBeallitasa(Guid azonosito, string? kovetkezo)
+    public SzemelyzetiRendeles UpdateOrderStatus(Guid azonosito, string? kovetkezo)
     {
-        using var adatbazis = KapcsolatMegnyitasa();
+        using var adatbazis = OpenConnection();
         using var tranzakcio = adatbazis.BeginTransaction();
-        var rendeles = RendelesOlvasasa(adatbazis, tranzakcio, azonosito);
-        RendelesiSzabalyok.AtmenetEllenorzese(rendeles.Allapot, kovetkezo);
+        var rendeles = ReadOrder(adatbazis, tranzakcio, azonosito);
+        RendelesiSzabalyok.ValidateTransition(rendeles.Allapot, kovetkezo);
         if (rendeles.Allapot != kovetkezo)
         {
-            using var modositas = Parancs(adatbazis, tranzakcio, "UPDATE rendelesek SET allapot = $allapot WHERE azonosito = $azonosito",
+            using var modositas = CreateCommand(adatbazis, tranzakcio, "UPDATE rendelesek SET allapot = $allapot WHERE azonosito = $azonosito",
                 ("$allapot", kovetkezo!), ("$azonosito", azonosito.ToString()));
             modositas.ExecuteNonQuery();
-            if (kovetkezo == "torolve") TarcasJovairas(adatbazis, tranzakcio, azonosito);
+            if (kovetkezo == "torolve") RefundWallet(adatbazis, tranzakcio, azonosito);
         }
         tranzakcio.Commit();
         return rendeles with { Allapot = kovetkezo! };
     }
 
-    private static (Guid Azonosito, string Lenyomat, Guid? ProfilAzonosito)? KeresMegkeresese(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid keresAzonosito)
+    private static (Guid Azonosito, string Lenyomat, Guid? ProfilAzonosito)? FindOrderRequest(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid keresAzonosito)
     {
-        using var lekerdezes = Parancs(adatbazis, tranzakcio, """
+        using var lekerdezes = CreateCommand(adatbazis, tranzakcio, """
             SELECT r.azonosito, r.keres_lenyomat, p.profil_azonosito
             FROM rendelesek r LEFT JOIN rendeles_profilok p ON p.rendeles_azonosito = r.azonosito
             WHERE r.keres_azonosito = $keres
@@ -190,11 +190,11 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             sor.IsDBNull(2) ? null : Guid.Parse(sor.GetString(2))) : null;
     }
 
-    private static List<RendelesiTetel> RendelhetoTetelek(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
+    private static List<RendelesiTetel> ReadAvailableItems(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
         SortedDictionary<int, int> mennyisegek)
     {
         var tetelek = new List<RendelesiTetel>(mennyisegek.Count);
-        using var lekerdezes = Parancs(adatbazis, tranzakcio, "SELECT nev, ar FROM etelek WHERE azonosito = $azonosito AND elerheto = 1",
+        using var lekerdezes = CreateCommand(adatbazis, tranzakcio, "SELECT nev, ar FROM etelek WHERE azonosito = $azonosito AND elerheto = 1",
             ("$azonosito", 0));
         foreach (var (azonosito, mennyiseg) in mennyisegek)
         {
@@ -207,9 +207,9 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         return tetelek;
     }
 
-    private static SzemelyzetiRendeles RendelesOlvasasa(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid azonosito)
+    private static SzemelyzetiRendeles ReadOrder(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid azonosito)
     {
-        using var rendeles = Parancs(adatbazis, tranzakcio, """
+        using var rendeles = CreateCommand(adatbazis, tranzakcio, """
             SELECT r.allapot, r.vegosszeg, r.letrehozva, r.vendeg_neve, r.telefonszam, r.megjegyzes,
                 COALESCE(k.kedvezmeny, 0), k.kuponkod,
                 EXISTS (SELECT 1 FROM tarca_muveletek t WHERE t.rendeles_azonosito = r.azonosito AND t.tipus = 'fizetes')
@@ -225,7 +225,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
                 sor.GetString(3), sor.GetString(4), sor.GetString(5), sor.GetInt32(6),
                 sor.IsDBNull(7) ? null : sor.GetString(7), sor.GetBoolean(8) ? "tarca" : "atvetel");
         }
-        using var tetelSorok = Parancs(adatbazis, tranzakcio, """
+        using var tetelSorok = CreateCommand(adatbazis, tranzakcio, """
             SELECT etel_azonosito, etel_neve, egysegar, mennyiseg FROM rendelesi_tetelek WHERE rendeles_azonosito = $azonosito ORDER BY etel_azonosito
             """, ("$azonosito", azonosito.ToString()));
         using var tetelSor = tetelSorok.ExecuteReader();
@@ -233,13 +233,13 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         return eredmeny;
     }
 
-    private static void SqlFajlVegrehajtasa(SqliteConnection adatbazis, SqliteTransaction tranzakcio, string fajl)
+    private static void ExecuteSqlFile(SqliteConnection adatbazis, SqliteTransaction tranzakcio, string fajl)
     {
-        using var parancs = Parancs(adatbazis, tranzakcio, File.ReadAllText(fajl));
+        using var parancs = CreateCommand(adatbazis, tranzakcio, File.ReadAllText(fajl));
         parancs.ExecuteNonQuery();
     }
 
-    private SqliteConnection KapcsolatMegnyitasa()
+    private SqliteConnection OpenConnection()
     {
         var adatbazis = new SqliteConnection(kapcsolatiKarakterlanc);
         try
@@ -254,7 +254,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         }
     }
 
-    private static SqliteCommand Parancs(SqliteConnection adatbazis, SqliteTransaction? tranzakcio, string utasitas,
+    private static SqliteCommand CreateCommand(SqliteConnection adatbazis, SqliteTransaction? tranzakcio, string utasitas,
         params (string Nev, object Ertek)[] parameterek)
     {
         var parancs = adatbazis.CreateCommand();

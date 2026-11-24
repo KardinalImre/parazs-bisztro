@@ -5,7 +5,8 @@ public sealed record Etel(int Azonosito, int KategoriaAzonosito, string Nev, str
 public sealed record Etlap(IReadOnlyList<Kategoria> Kategoriak, IReadOnlyList<Etel> Etelek);
 public sealed record RendelesiTetelBemenet(int EtelAzonosito, int Mennyiseg);
 public sealed record RendelesBemenet(Guid KeresAzonosito, string? VendegNeve, string? Telefonszam,
-    string? Megjegyzes, List<RendelesiTetelBemenet?>? Tetelek, int? VartVegosszeg = null, string? Kuponkod = null, string? FizetesiMod = null);
+    string? Megjegyzes, List<RendelesiTetelBemenet?>? Tetelek, int? VartVegosszeg = null, string? Kuponkod = null, string? FizetesiMod = null,
+    Guid? VartProfilAzonosito = null);
 public sealed record OsszesitesBemenet(List<RendelesiTetelBemenet?>? Tetelek, string? Kuponkod = null);
 public sealed record RendelesiTetel(int EtelAzonosito, string EtelNeve, int Egysegar, int Mennyiseg);
 public sealed record RendelesOsszesito(Guid Azonosito, string Allapot, int Vegosszeg, string Letrehozva,
@@ -13,7 +14,7 @@ public sealed record RendelesOsszesito(Guid Azonosito, string Allapot, int Vegos
 public sealed record SzemelyzetiRendeles(Guid Azonosito, string Allapot, int Vegosszeg, string Letrehozva,
     IReadOnlyList<RendelesiTetel> Tetelek, string VendegNeve, string Telefonszam, string Megjegyzes, int Kedvezmeny = 0, string? Kuponkod = null, string FizetesiMod = "atvetel")
 {
-    public RendelesOsszesito Vendegnek() => new(Azonosito, Allapot, Vegosszeg, Letrehozva, Tetelek, Kedvezmeny, Kuponkod, FizetesiMod);
+    public RendelesOsszesito ToGuestView() => new(Azonosito, Allapot, Vegosszeg, Letrehozva, Tetelek, Kedvezmeny, Kuponkod, FizetesiMod);
 }
 public sealed record AllapotBemenet(string? Allapot);
 public sealed record ElerhetosegBemenet(bool? Elerheto);

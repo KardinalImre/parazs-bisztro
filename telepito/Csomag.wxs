@@ -1,0 +1,24 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Parázs Bisztró – Személyzet" Manufacturer="Parázs Bisztró" Version="1.0.0"
+           Language="1038" UpgradeCode="43CB15B4-4653-487C-84D0-96AF48C8F061" Scope="perUser">
+    <SummaryInformation Codepage="1250" />
+    <MediaTemplate EmbedCab="yes" />
+    <MajorUpgrade DowngradeErrorMessage="A Parázs személyzeti alkalmazás újabb verziója már telepítve van." />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ParazsTelepitesiMappa" Name="Parazs Szemelyzet">
+        <Component Id="SzemelyzetiAlkalmazas" Guid="EC2680C4-EA1F-484E-8DED-E5C87B2927C1" Bitness="always64">
+          <File Id="AlkalmazasExe" Source="$(var.KliensFajl)" />
+          <Shortcut Id="StartMenu" Directory="ProgramMenuFolder" Name="Parázs Bisztró – Személyzet"
+                    Target="[#AlkalmazasExe]" WorkingDirectory="ParazsTelepitesiMappa" />
+          <RemoveFolder Id="TelepitesiMappaTorlese" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\ParazsBisztro\Szemelyzet"
+                         Name="Telepitve" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <Feature Id="Szemelyzet" Title="Parázs személyzeti felület" Level="1">
+      <ComponentRef Id="SzemelyzetiAlkalmazas" />
+    </Feature>
+  </Package>
+</Wix>

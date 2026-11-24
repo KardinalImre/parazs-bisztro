@@ -6,13 +6,13 @@ public sealed record KosarOsszesites(int Reszosszeg, int Kedvezmeny, int Vegossz
 
 public sealed partial class EttermiAdattar
 {
-    private static KosarOsszesites Osszesites(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
+    private static KosarOsszesites CalculateQuote(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
         IReadOnlyList<RendelesiTetel> tetelek, string? kuponkod)
     {
         var reszosszeg = tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
         if (kuponkod is null) return new(reszosszeg, 0, reszosszeg, null);
 
-        using var parancs = Parancs(adatbazis, tranzakcio, """
+        using var parancs = CreateCommand(adatbazis, tranzakcio, """
             SELECT tipus, ertek, minimum_osszeg FROM kuponok WHERE kod = $kod AND aktiv = 1
             """, ("$kod", kuponkod));
         using var sor = parancs.ExecuteReader();
@@ -27,11 +27,11 @@ public sealed partial class EttermiAdattar
         return new(reszosszeg, kedvezmeny, reszosszeg - kedvezmeny, kuponkod);
     }
 
-    private static void KuponMentese(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
+    private static void SaveDiscount(SqliteConnection adatbazis, SqliteTransaction tranzakcio,
         Guid rendeles, KosarOsszesites osszesites)
     {
         if (osszesites.Kuponkod is null) return;
-        using var parancs = Parancs(adatbazis, tranzakcio, """
+        using var parancs = CreateCommand(adatbazis, tranzakcio, """
             INSERT INTO rendeles_kedvezmenyek (rendeles_azonosito, kuponkod, kedvezmeny)
             VALUES ($rendeles, $kod, $kedvezmeny)
             """, ("$rendeles", rendeles.ToString()), ("$kod", osszesites.Kuponkod),
@@ -39,4 +39,3 @@ public sealed partial class EttermiAdattar
         parancs.ExecuteNonQuery();
     }
 }
-

@@ -1,0 +1,139 @@
+<Window x:Class="Parazs.Szemelyzet.Foablak"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Parázs Bisztró – Személyzet" Width="1100" Height="760"
+        MinWidth="800" MinHeight="580" WindowStartupLocation="CenterScreen"
+        Background="{StaticResource Papir}" Foreground="{StaticResource Tinta}"
+        FontFamily="Segoe UI" FontSize="14" Language="hu-HU">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock Text="PARÁZS BISZTRÓ" Foreground="{StaticResource Rozsda}" FontWeight="Bold"/>
+      <TextBlock Text="Személyzeti felület" FontFamily="Georgia" FontSize="34" FontWeight="Bold" Margin="0,4,0,12"/>
+    </StackPanel>
+    <Border Grid.Row="1" Background="{StaticResource Feher}" BorderBrush="{StaticResource Vonal}"
+            BorderThickness="1" CornerRadius="9" Padding="14" Margin="0,0,0,16">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="2*"/>
+          <ColumnDefinition Width="2*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="0,0,12,0">
+          <Label Target="{Binding ElementName=SzerverCim}" Content="Szerver címe" Padding="0,0,0,4" FontWeight="SemiBold"/>
+          <TextBox x:Name="SzerverCim" Text="http://127.0.0.1:5080" AutomationProperties.AutomationId="SzerverCim"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="0,0,12,0">
+          <Label Target="{Binding ElementName=SzemelyzetiKulcs}" Content="Személyzeti kulcs" Padding="0,0,0,4" FontWeight="SemiBold"/>
+          <PasswordBox x:Name="SzemelyzetiKulcs" AutomationProperties.AutomationId="SzemelyzetiKulcs"/>
+        </StackPanel>
+        <WrapPanel Grid.Column="2" VerticalAlignment="Bottom">
+          <Button x:Name="BelepesGomb" Content="Belépés" Click="OnSignInClick" Style="{StaticResource KiemeltGomb}"
+                  AutomationProperties.AutomationId="BelepesGomb"/>
+          <Button x:Name="FrissitesGomb" Content="Frissítés" Click="OnRefreshClick" IsEnabled="False"/>
+          <Button x:Name="KilepesGomb" Content="Kilépés" Click="OnSignOutClick" IsEnabled="False" Margin="0"/>
+        </WrapPanel>
+      </Grid>
+    </Border>
+    <Border x:Name="BelepesSugo" Grid.Row="2" Background="{StaticResource Feher}" BorderBrush="{StaticResource Vonal}"
+            BorderThickness="1" CornerRadius="9" Padding="22" VerticalAlignment="Top">
+      <StackPanel>
+        <TextBlock Text="Kapcsolódás a rendelőrendszerhez" FontFamily="Georgia" FontSize="20" FontWeight="Bold"/>
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                   Text="Indítsd el az éttermi szervert, majd másold be a terminálból a személyzeti kulcsot."/>
+      </StackPanel>
+    </Border>
+    <TabControl x:Name="Lapok" Grid.Row="2" Visibility="Collapsed" Background="{StaticResource Papir}"
+                BorderBrush="{StaticResource Vonal}">
+      <TabItem Header="Rendelések">
+        <Grid Margin="10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="2*"/>
+          </Grid.ColumnDefinitions>
+          <DataGrid x:Name="RendelesTabla" SelectionChanged="OnOrderSelected" AutomationProperties.Name="Rendelések">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Vendég" Binding="{Binding VendegNeve}" Width="*"/>
+              <DataGridTextColumn Header="Állapot" Binding="{Binding AllapotNev}" Width="105"/>
+              <DataGridTextColumn Header="Végösszeg" Binding="{Binding Osszeg}" Width="100"/>
+              <DataGridTextColumn Header="Időpont" Binding="{Binding Idopont}" Width="140"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="RendelesReszletek" Background="{StaticResource Feher}">
+              <TextBlock Text="Rendelés részletei" FontFamily="Georgia" FontSize="21" FontWeight="Bold" Margin="14,14,14,8"/>
+              <TextBlock Text="{Binding VendegNeve}" FontWeight="Bold" Margin="14,0"/>
+              <TextBlock Text="{Binding Telefonszam}" Margin="14,3"/>
+              <TextBlock Text="{Binding Azonosito}" Foreground="{StaticResource Halvany}" TextWrapping="Wrap" Margin="14,3"/>
+              <ItemsControl ItemsSource="{Binding Tetelek}" Margin="14,9">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{Binding Felirat}" TextWrapping="Wrap" Margin="0,3"/></DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{Binding Megjegyzes}" TextWrapping="Wrap" Margin="14,3"/>
+              <TextBlock Text="{Binding Fizetes}" Margin="14,3"/>
+              <WrapPanel Margin="14,12">
+                <Button x:Name="RendelesKovetkezo" Style="{StaticResource KiemeltGomb}" Click="OnAdvanceOrderClick"/>
+                <Button x:Name="RendelesTorlesGomb" Content="Törlés" Click="OnCancelOrderClick"/>
+              </WrapPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Étel-elérhetőség">
+        <DockPanel Margin="10">
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <Button x:Name="EtelGomb" HorizontalAlignment="Left" Click="OnToggleDishClick"/>
+          </StackPanel>
+          <DataGrid x:Name="EtelTabla" SelectionChanged="OnDishSelected" AutomationProperties.Name="Étel-elérhetőség">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Étel" Binding="{Binding Nev}" Width="2*"/>
+              <DataGridTextColumn Header="Leírás" Binding="{Binding Leiras}" Width="3*"/>
+              <DataGridTextColumn Header="Ár" Binding="{Binding ArFelirat}" Width="95"/>
+              <DataGridTextColumn Header="Elérhetőség" Binding="{Binding Elerhetoseg}" Width="120"/>
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+      <TabItem Header="Ügyfélszolgálat">
+        <Grid Margin="10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="12"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <DataGrid x:Name="JegyTabla" SelectionChanged="OnTicketSelected" AutomationProperties.Name="Ügyfélszolgálati jegyek">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Tárgy" Binding="{Binding Targy}" Width="*"/>
+              <DataGridTextColumn Header="Állapot" Binding="{Binding AllapotNev}" Width="115"/>
+            </DataGrid.Columns>
+          </DataGrid>
+          <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="JegyReszletek" Background="{StaticResource Feher}">
+              <TextBlock Text="{Binding Targy}" TextWrapping="Wrap" FontFamily="Georgia" FontSize="21" FontWeight="Bold" Margin="14,14,14,6"/>
+              <TextBlock Text="{Binding Email}" Margin="14,3" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding RendelesAzonosito}" Foreground="{StaticResource Halvany}" TextWrapping="Wrap" Margin="14,3"/>
+              <TextBlock Text="{Binding Uzenet}" TextWrapping="Wrap" Margin="14,9"/>
+              <Label Content="Válasz" Target="{Binding ElementName=JegyValasz}" Margin="14,0" Padding="0,4"/>
+              <TextBox x:Name="JegyValasz" AutomationProperties.AutomationId="JegyValasz" AcceptsReturn="True"
+                       TextWrapping="Wrap" Height="108" MaxLength="2000" VerticalScrollBarVisibility="Auto" Margin="14,0"/>
+              <WrapPanel Margin="14,12">
+                <Button x:Name="ValaszGomb" Content="Válasz mentése" Click="OnSaveReplyClick" Style="{StaticResource KiemeltGomb}"/>
+                <Button x:Name="LezarasGomb" Content="Ügy lezárása" Click="OnCloseTicketClick"/>
+              </WrapPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+    </TabControl>
+    <TextBlock Grid.Row="3" x:Name="AllapotUzenet" AutomationProperties.AutomationId="AllapotUzenet"
+               AutomationProperties.LiveSetting="Polite" Foreground="{StaticResource Halvany}"
+               Margin="0,13,0,0" TextWrapping="Wrap" Text="Belépésre vár."/>
+  </Grid>
+</Window>
