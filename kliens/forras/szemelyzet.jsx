@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, forintban, allapotFelirat } from './api.js';
+import { SzemelyzetiJegyek } from './szemelyzeti-jegyek.jsx';
 
 const kovetkezoAllapot = { beerkezett: 'keszul', keszul: 'atveheto', atveheto: 'atadva' };
 const kovetkezoFelirat = { beerkezett: 'Elkészítés indítása', keszul: 'Átvehetőre állítás', atveheto: 'Átadás rögzítése' };
@@ -80,8 +81,9 @@ export function Szemelyzet() {
             <div className="szurok">
               <button aria-pressed={ful === 'rendelesek'} onClick={() => fulBeallitasa('rendelesek')}>Rendelések</button>
               <button aria-pressed={ful === 'etlap'} onClick={() => fulBeallitasa('etlap')}>Étel elérhetősége</button>
+              <button aria-pressed={ful === 'jegyek'} onClick={() => fulBeallitasa('jegyek')}>Ügyfélszolgálat</button>
             </div>
-            <button className="gomb masodlagos" onClick={() => muvelet(() => frissites(kulcs))} disabled={foglalt}>Frissítés</button>
+            {ful !== 'jegyek' && <button className="gomb masodlagos" onClick={() => muvelet(() => frissites(kulcs))} disabled={foglalt}>Frissítés</button>}
           </div>
           {ful === 'rendelesek' ? (
             <div className="szemelyzeti-rendelesek">
@@ -108,7 +110,7 @@ export function Szemelyzet() {
                 </article>
               ))}
             </div>
-          ) : (
+          ) : ful === 'jegyek' ? <SzemelyzetiJegyek kulcs={kulcs} /> : (
             <ul className="elerhetoseg">
               {etlap.etelek.map(etel => <li key={etel.azonosito}>
                 <div><strong>{etel.nev}</strong><span>{etel.elerheto ? 'Rendelhető' : 'Nem rendelhető'}</span></div>

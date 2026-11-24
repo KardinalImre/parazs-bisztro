@@ -130,3 +130,30 @@ test('UI-03 · Vendégprofil, előtöltött rendelési adatok és rendelési el�
     await oldal.close();
   }
 });
+
+test('UI-04 · Ügyfélszolgálati üzenet és válasz megjelenítése', async () => {
+  const vendeg = await bongeszo.newPage({ viewport: { width: 390, height: 844 } });
+  const szemelyzet = await bongeszo.newPage();
+  vendeg.setDefaultTimeout(8000);
+  szemelyzet.setDefaultTimeout(8000);
+  try {
+    await vendeg.goto(szerver.cim + '/ugyfelszolgalat');
+    await vendeg.getByLabel('E-mail-cím').fill('ugyfel@example.com');
+    await vendeg.getByLabel('Tárgy').fill('Átvételi kérdés');
+    await vendeg.getByLabel('Üzenet', { exact: true }).fill('Meddig lehet átvenni a rendelést?');
+    await vendeg.getByRole('button', { name: 'Üzenet elküldése' }).click();
+    await vendeg.getByRole('heading', { name: 'Átvételi kérdés' }).waitFor();
+    assert.match(await vendeg.getByLabel('Ügyazonosító').inputValue(), /^[0-9a-f-]{36}$/);
+    await szemelyzet.goto(szerver.cim + '/szemelyzet');
+    await szemelyzet.getByLabel('Személyzeti kulcs').fill(szemelyzetiKulcs);
+    await szemelyzet.getByRole('button', { name: 'Belépés' }).click();
+    await szemelyzet.getByRole('button', { name: 'Ügyfélszolgálat', exact: true }).click();
+    await szemelyzet.getByLabel('Válasz', { exact: true }).fill('A pultnál várjuk.');
+    await szemelyzet.getByRole('button', { name: 'Válasz mentése' }).click();
+    await szemelyzet.getByText(/Megválaszolva/).waitFor();
+    await vendeg.getByRole('button', { name: 'Válasz lekérése' }).click();
+    await vendeg.getByText('A pultnál várjuk.', { exact: true }).waitFor();
+  } finally {
+    await Promise.all([vendeg.close(), szemelyzet.close()]);
+  }
+});

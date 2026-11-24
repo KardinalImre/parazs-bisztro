@@ -19,6 +19,9 @@ epito.Services.AddRateLimiter(beallitasok =>
     beallitasok.AddPolicy("belepes", kornyezet => RateLimitPartition.GetFixedWindowLimiter(
         kornyezet.Connection.RemoteIpAddress?.ToString() ?? "helyi",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1) }));
+    beallitasok.AddPolicy("ugyfelszolgalat", kornyezet => RateLimitPartition.GetFixedWindowLimiter(
+        kornyezet.Connection.RemoteIpAddress?.ToString() ?? "helyi",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var mappa = epito.Environment.ContentRootPath;
@@ -107,6 +110,13 @@ api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
     return letrejott ? Results.Created($"/api/rendelesek/{rendeles.Azonosito}", rendeles) : Results.Ok(rendeles);
 });
 api.MapGet("/rendelesek/{azonosito:guid}", (Guid azonosito) => adattar.RendelesLekerese(azonosito));
+var ugyfelszolgalat = api.MapGroup("/ugyfelszolgalat/jegyek");
+ugyfelszolgalat.MapPost("", (JegyBemenet bemenet) =>
+{
+    var (jegy, letrejott) = adattar.JegyLetrehozasa(bemenet);
+    return letrejott ? Results.Created($"/api/ugyfelszolgalat/jegyek/{jegy.Azonosito}", jegy) : Results.Ok(jegy);
+}).RequireRateLimiting("ugyfelszolgalat");
+ugyfelszolgalat.MapGet("/{azonosito:guid}", (Guid azonosito) => adattar.JegyLekerese(azonosito));
 var szemelyzet = api.MapGroup("/szemelyzet");
 szemelyzet.AddEndpointFilter(async (kornyezet, kovetkezo) =>
 {
@@ -117,6 +127,9 @@ szemelyzet.AddEndpointFilter(async (kornyezet, kovetkezo) =>
     return Results.Json(new { hiba = "Érvénytelen vagy hiányzó személyzeti kulcs." }, statusCode: 401);
 });
 szemelyzet.MapGet("/rendelesek", () => adattar.RendelesekLekerese());
+szemelyzet.MapGet("/jegyek", () => adattar.JegyekLekerese());
+szemelyzet.MapPatch("/jegyek/{azonosito:guid}", (Guid azonosito, JegyValaszBemenet bemenet) =>
+    adattar.JegyModositasa(azonosito, bemenet));
 szemelyzet.MapGet("/etlap", () => adattar.EtlapLekerese(elfogyottakkal: true));
 szemelyzet.MapPatch("/rendelesek/{azonosito:guid}", (Guid azonosito, AllapotBemenet bemenet) =>
     adattar.AllapotBeallitasa(azonosito, bemenet.Allapot));
@@ -129,6 +142,7 @@ szemelyzet.MapPatch("/etelek/{azonosito:int}", (int azonosito, ElerhetosegBemene
 alkalmazas.MapGet("/admin", () => Results.Redirect("/szemelyzet"));
 alkalmazas.MapFallbackToFile("/szemelyzet", "index.html");
 alkalmazas.MapFallbackToFile("/profil", "index.html");
+alkalmazas.MapFallbackToFile("/ugyfelszolgalat", "index.html");
 alkalmazas.Run();
 
 string AlapertelmezettAdatbazis()

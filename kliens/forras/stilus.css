@@ -202,3 +202,9 @@ label select { display: block; width: 100%; min-height: 44px; margin-top: 4px; p
 .tarca-feltoltes { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; margin-top: 16px; }
 .tarca-muveletek { list-style: none; padding: 0 !important; }
 .tarca-muveletek li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--vonal); }
+
+.ugyfel-racs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.ugyfel-racs .szemelyzeti-belepes { max-width: none; }
+.ugyfel-valasz { margin-top: 14px; }
+.ugyfel-uzenet { white-space: pre-wrap; margin-block: 12px; }
+@media (max-width: 680px) { .ugyfel-racs { grid-template-columns: 1fr; gap: 0; } }
