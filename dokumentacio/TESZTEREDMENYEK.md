@@ -1,54 +1,53 @@
 # Parázs Bisztró — teszteredmények
 
-**Futtatás dátuma:** 2026. november 24.  
-**Környezet:** Windows 10 x64, .NET SDK 10.0.401, Node.js 24.18.1, Microsoft Edge 158.0.4370.33, Playwright 1.65.1.  
-**Eredmény:** 8 API-integrációs teszt és 2 böngészős végponttól végpontig tartó teszt sikeres. Sikertelen vagy kihagyott teszt 0.
+**Futtatás:** 2026. november 24., Windows 10 x64, .NET SDK 10.0.401, Node.js 24.18.1, Playwright 1.65.1 és Microsoft Edge.
 
-## API-integrációs tesztek
+**Összesítés:** 14 API-integrációs, 4 böngészős és 1 WPF API-kliens teszt sikeres.
 
-A csomagolt [API-tesztek](../kliens/tesztek/api.test.mjs) külön ASP.NET Core-szervert indítanak, ideiglenes SQLite-adatbázist használnak, és HTTP-n ellenőrzik a válaszokat.
+## API-integráció
 
-- **API-01 · Étlap — sikeres.** Négy kategória, tíz étel, ellenőrzött mintaár és 200-as válasz.
-- **API-02 · Rendelés és követés — sikeres.** Az új rendelés 201-et és követési URL-t ad. A szerver 9 870 Ft-ot számít a két pizzából és egy limonádéból. A nyilvános válasz személyes adat nélküli rendelési összesítést ad; ismeretlen kódra 404 érkezik.
-- **API-03 · Validáció — sikeres.** Hibás név, telefonszám, azonosító, mennyiség, hiányos tétel, ismételt tétel, üres kosár és hibás JSON esetén 400 érkezik.
-- **API-04 · Ismételt kérés — sikeres.** Öt egyidejű, azonos kérés egy rendelési azonosítót eredményez. Az egyik válasz 201, a másik négy 200. Azonos kérésazonosító módosított tartalommal 409-et ad.
-- **API-05 · Jogosultság és állapot — sikeres.** A védett erőforrások kulcs nélkül 401-et adnak. Az engedélyezett sorrend végigjárható; átugrott és végállapotból indított átmenetre 409 érkezik.
-- **API-06 · Elérhetőség és tranzakció — sikeres.** Az elrejtett étel eltűnik az étlapról. A vele leadott rendelés 409-et ad, a mentett rendelések darabszáma változatlan marad. Visszakapcsolás után az étel ismét rendelhető.
-- **API-07 · Tartós mentés — sikeres.** Szerver-újraindítás után a korábbi rendelés és a módosított elérhetőség megmarad.
+A [tesztkód](../kliens/tesztek/api.test.mjs) önálló ASP.NET Core-tesztszervert és ideiglenes SQLite-adatbázist indít. A tesztkérések a tényleges REST API-ra érkeznek.
 
-- **API-08 · Átállás a korábbi sémáról — sikeres.** A régi rendelés az eredeti követési kóddal, egységárral és tételekkel lekérhető. Az elrejtett étel állapota megmarad, az azonos tartalmú rendelési kérésre 200 érkezik, és az adatok újraindítás után is elérhetők.
+- **API-01–03 · Étlap, rendelés és validáció.** Ellenőrzött a tíz mintaétel, a szerveroldali ár, a nyilvános rendelésválasz adatszűrése, valamint a hibás tétel, telefonszám, kosár és JSON elutasítása.
+- **API-04–07 · Ismétlés, jogosultság és megőrzés.** Öt párhuzamos beküldésből egy rendelés jött létre. Kulcs nélkül a személyzeti kérések elutasításra kerültek. Működött az állapotátmenet, az étel elrejtése és az újraindítás utáni megőrzés.
+- **API-08–09 · Korábbi adatok és ár.** A korábbi adatbázis átvétele megőrizte a tételeket és az eredeti követési kódot. Eltérő, előzetesen jóváhagyott végösszegre 409 érkezett.
+- **API-10–11 · Profil és előzmények.** Regisztráció, belépés, adatmódosítás és kilépés működött. Másik profilból a saját rendelés nem jelent meg. Más profil azonos kérésazonosítóval sem kapta meg a rendelést.
+- **API-12–13 · Kupon és tárca.** A százalékos kupon a szerveren számolódott, az érvénytelen és a minimum alatti kódot a szerver elutasította. A tárcafeltöltés és rendelés ismétlése egyszeri egyenlegváltozást eredményezett. Elégtelen egyenlegnél a rendelés nem maradt az adatbázisban. Törléskor egyszeri jóváírás történt.
+- **API-14 · Ügyfélszolgálat.** A jegy beküldhető, megválaszolható és lezárható. Vendégoldalon az e-mail-cím és a beküldött üzenet nem jelenik meg. A válasz az ügyazonosítóval lekérhető.
 
-## Böngészős tesztek
+## Böngészős forgatókönyvek
 
-A [Playwright-forgatókönyvek](../kliens/tesztek/bongeszo.test.mjs) a lefordított React-klienssel és a C# szerverrel futnak.
+A [Playwright-tesztek](../kliens/tesztek/bongeszo.test.mjs) a lefordított React-klienst és a C# szervert használják.
 
-- **UI-01 · Asztali rendelés — sikeres.** 1440 × 1000 képponton betöltött az étlap és a fotó, a vendég leadta a rendelést, a személyzet átvehetőre állította, a vendég pedig újratöltés után lekérte az új állapotot. A régi személyzeti cím átirányítása is működött.
-- **UI-02 · Mobil rendelés — sikeres.** 390 × 844 képpontos érintéses emulációban működött a kategóriaszűrés, a korábbi változatban mentett kosár beolvasása, a mennyiségmódosítás és a beküldés. Két tiramisu végösszege 3 580 Ft. A felület a megadott szélességen vízszintes görgetés nélkül használható.
+- **UI-01 · Asztali rendelés.** Rendelés leadása, személyzeti állapotváltás és vendégoldali követés.
+- **UI-02 · Mobil rendelés.** Ékezetfüggetlen kereső, kategóriaszűrés, régi kosár beolvasása, mennyiségmódosítás és rendelés 390 képpontos szélességen.
+- **UI-03 · Profil, tárca és kupon.** Regisztráció, adatmentés, próbafeltöltés, előtöltött átvételi űrlap, kedvezmény és fizetés, valamint korábbi rendelés megjelenítése.
+- **UI-04 · Ügyfélszolgálati üzenet.** Jegy beküldése mobilméretben, személyzeti válasz és vendégoldali válaszlekérés.
 
-## SQL-export és fordítás
+## WPF és telepítő
 
-- **SQL-visszaállítás — sikeres.** Az export üres SQLite 3.50.4 adatbázisba betölthető volt. Eredmény 4 kategória, 10 étel, 0 rendelés és 0 rendelési tétel. A `PRAGMA integrity_check` eredménye `ok`, a `PRAGMA foreign_key_check` üres eredményt adott.
-- **C# fordítás — sikeres.** 0 hiba és 0 figyelmeztetés.
-- **React-kliens összeállítása — sikeres.** A Vite a statikus állományokat a szerver `wwwroot` könyvtárába írta.
+- **WPF-01 · Kliens–API integráció.** A [teszt](../kliens/tesztek/wpf-api.test.mjs) a WPF által használt C# HTTP-klienst futtatja. A valódi tesztszerveren ellenőrizte a listákat, a rendelés állapotát, az étel elrejtését, a jegy megválaszolását és lezárását, valamint a hibás kulcsot és a címellenőrzést.
+- **WPF és MSI összeállítása.** A WPF-kliens lefordult, a WiX elkészítette a Windows x64 MSI-t. Az MSI adminisztratív kibontása sikerült, a kibontott futtatható állomány lenyomata egyezett a becsomagolt példányéval. A kibontott alkalmazás magyar belépőablaka megnyílt. Az ellenőrzés ideiglenes mappában, adminisztratív kibontással történt.
+- **Telepítői megjegyzés.** A WiX ICE91 jelzése a felhasználónkénti telepítési mappára vonatkozik. A csomag felhasználónkénti telepítésre van beállítva és digitálisan aláíratlan.
 
-## Ismételt futtatás
+## SQL-export
 
-A projekt gyökérkönyvtárában futtasd:
+A tiszta SQLite-adatbázisba betöltött export 11 táblát, 4 kategóriát, 10 ételt és 2 kupont eredményezett. Az integritás- és idegenkulcs-ellenőrzés hibamentes volt.
+
+## Újrafuttatás
+
+A projekt gyökérkönyvtárából:
 
 ```sh
 npm --prefix kliens ci
 npm --prefix kliens run epites
 dotnet build szerver/Parazs.csproj
 npm --prefix kliens run teszt:api
-```
-
-A böngészős teszthez egyszer telepítsd a Playwright Chromiumot, majd indítsd a tesztet:
-
-```sh
+npm --prefix kliens run teszt:wpf
 cd kliens
 npx playwright install chromium
 npm run teszt:bongeszo
 ```
 
-Telepített Edge használatához PowerShellből állítsd a `PARAZS_BONGESZO` változót `msedge` értékre, majd futtasd az `npm run teszt:bongeszo` parancsot. A mobilteszt emulált nézetet használ. A tesztek a helyi bemutató működését vizsgálják.
+Telepített Edge választásához a `PARAZS_BONGESZO` változó értéke `msedge`. A mobilforgatókönyv böngészős emulációval fut.
 

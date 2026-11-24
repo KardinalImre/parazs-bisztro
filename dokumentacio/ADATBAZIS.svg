@@ -1,120 +1,273 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="904" height="822" viewBox="0 0 904 822" role="img" aria-labelledby="title leiras">
-  <title azonosito="title">Parázs Bisztró adatbázismodell</title>
-  <desc azonosito="leiras">Egy kategóriához több étel, egy ételhez és egy rendeléshez több rendelési tétel tartozhat.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1415" height="1260" viewBox="0 0 1415 1260" role="img" aria-labelledby="cim leiras">
+  <title id="cim">Parázs Bisztró – adatbázismodell</title>
+  <desc id="leiras">A tizenegy SQLite-tábla mezői, kulcsai és idegenkulcs-kapcsolatai.</desc>
+  <defs>
+    <marker id="nyil" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#9b442e"/>
+    </marker>
+  </defs>
   <style>
     text { font-family: Segoe UI, sans-serif; fill: #2b221e; }
-    .heading { font-size: 32px; font-weight: 700; }
-    .sub { font-size: 15px; fill: #665a51; }
-    .entity { font-size: 20px; font-weight: 700; fill: white; }
-    .caption { font-size: 13px; fill: #ffdfca; }
-    .field { font: 15px Consolas, monospace; }
-    .datatype { font-size: 13px; fill: #665a51; }
-    .tag { font-size: 11px; font-weight: 800; fill: #a0371d; }
-    .cardinality { font-size: 15px; font-weight: 700; fill: #7d2816; }
+    .cim { font-size: 33px; font-weight: 700; }
+    .leiras { font-size: 15px; fill: #5b5049; }
+    .tabla { font-size: 19px; font-weight: 700; fill: #fffdf8; }
+    .alcim { font-size: 13px; fill: #ffdfca; }
+    .mezo { font: 14px Consolas, monospace; }
+    .kulcs { font-size: 11px; font-weight: 800; fill: #963319; }
+    .tipus { font-size: 12px; fill: #5b5049; }
   </style>
-  <rect width="904" height="822" fill="#f8f4eb"/>
-  <text x="48" y="55" class="heading">Parázs Bisztró · Adatbázismodell</text>
-  <text x="48" y="84" class="sub">SQLite relációs séma · Négy üzleti tábla</text>
-  <path d="M408 168H496 M676 361V421 M408 467H496" fill="none" stroke="#a0371d" stroke-width="2"/>
-  <text x="419" y="159" class="cardinality">1</text>
-  <text x="476" y="159" class="cardinality">N</text>
-  <text x="686" y="381" class="cardinality">1</text>
-  <text x="686" y="409" class="cardinality">N</text>
-  <text x="419" y="458" class="cardinality">1</text>
-  <text x="476" y="458" class="cardinality">N</text>
-  <g transform="translate(48 122)">
-    <rect width="360" height="152" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
-    <path d="M12 0H348Q360 0 360 12V57H0V12Q0 0 12 0Z" fill="#a0371d"/>
-    <text x="16" y="25" class="entity">kategoriak</text>
-    <text x="16" y="45" class="caption">Étlapi kategóriák</text>
-    <text x="16" y="79" class="tag">PK</text>
-    <text x="62" y="79" class="field">azonosito</text>
-    <text x="347" text-anchor="end" y="79" class="datatype">INTEGER</text>
-    <text x="16" y="108" class="tag"></text>
-    <text x="62" y="108" class="field">nev</text>
-    <text x="347" text-anchor="end" y="108" class="datatype">TEXT · egyedi</text>
-    <text x="16" y="137" class="tag"></text>
-    <text x="62" y="137" class="field">sorrend</text>
-    <text x="347" text-anchor="end" y="137" class="datatype">INTEGER</text>
+  <rect width="1415" height="1260" fill="#f8f4eb"/>
+  <text x="56" y="53" class="cim">Parázs Bisztró · Adatbázismodell</text>
+  <text x="56" y="82" class="leiras">SQLite · A nyilak a hivatkozott táblától az idegen kulcsot tároló tábláig mutatnak.</text>
+
+  <path d="M226 300V354" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>profilok → munkamenetek</title></path>
+  <path d="M56 236H32V576H56" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>profilok → rendeles_profilok</title></path>
+  <path d="M56 210H17V774H56" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>profilok → tarca_muveletek</title></path>
+  <path d="M526 365H477V601H421" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>rendelesek → rendeles_profilok</title></path>
+  <path d="M526 326H452V794H421" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>rendelesek → tarca_muveletek</title></path>
+  <path d="M707 396V472" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>rendelesek → rendelesi_tetelek</title></path>
+  <path d="M1177 252V316" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>kategoriak → etelek</title></path>
+  <path d="M996 509H891" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>etelek → rendelesi_tetelek</title></path>
+  <path d="M996 808H891" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>kuponok → rendeles_kedvezmenyek</title></path>
+  <path d="M891 338H920V759H891" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>rendelesek → rendeles_kedvezmenyek</title></path>
+  <path d="M891 223H947V943H891" fill="none" stroke="#9b442e" stroke-width="2" marker-end="url(#nyil)"><title>rendelesek → ugyfelszolgalati_jegyek</title></path>
+  <g transform="translate(56 120)">
+    <rect width="365" height="180" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">profilok</text>
+    <text x="14" y="42" class="alcim">Vendégfiókok</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs"></text>
+    <text x="59" y="97" class="mezo">nev</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">email</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">telefonszam</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">jelszo_lenyomat</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">TEXT</text>
   </g>
-  <g transform="translate(496 122)">
-    <rect width="360" height="239" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
-    <path d="M12 0H348Q360 0 360 12V57H0V12Q0 0 12 0Z" fill="#a0371d"/>
-    <text x="16" y="25" class="entity">etelek</text>
-    <text x="16" y="45" class="caption">Ételek és italok</text>
-    <text x="16" y="79" class="tag">PK</text>
-    <text x="62" y="79" class="field">azonosito</text>
-    <text x="347" text-anchor="end" y="79" class="datatype">INTEGER</text>
-    <text x="16" y="108" class="tag">FK</text>
-    <text x="62" y="108" class="field">kategoria_azonosito</text>
-    <text x="347" text-anchor="end" y="108" class="datatype">INTEGER</text>
-    <text x="16" y="137" class="tag"></text>
-    <text x="62" y="137" class="field">nev</text>
-    <text x="347" text-anchor="end" y="137" class="datatype">TEXT · egyedi</text>
-    <text x="16" y="166" class="tag"></text>
-    <text x="62" y="166" class="field">leiras</text>
-    <text x="347" text-anchor="end" y="166" class="datatype">TEXT</text>
-    <text x="16" y="195" class="tag"></text>
-    <text x="62" y="195" class="field">ar</text>
-    <text x="347" text-anchor="end" y="195" class="datatype">INTEGER · Ft</text>
-    <text x="16" y="224" class="tag"></text>
-    <text x="62" y="224" class="field">elerheto</text>
-    <text x="347" text-anchor="end" y="224" class="datatype">INTEGER · 0/1</text>
+  <g transform="translate(56 354)">
+    <rect width="365" height="132" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">munkamenetek</text>
+    <text x="14" y="42" class="alcim">Bejelentkezések</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">lenyomat</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs">IK</text>
+    <text x="59" y="97" class="mezo">profil_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">lejarat</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">INTEGER</text>
   </g>
-  <g transform="translate(48 421)">
-    <rect width="360" height="326" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
-    <path d="M12 0H348Q360 0 360 12V57H0V12Q0 0 12 0Z" fill="#a0371d"/>
-    <text x="16" y="25" class="entity">rendelesek</text>
-    <text x="16" y="45" class="caption">Vendégrendelések</text>
-    <text x="16" y="79" class="tag">PK</text>
-    <text x="62" y="79" class="field">azonosito</text>
-    <text x="347" text-anchor="end" y="79" class="datatype">TEXT · UUID</text>
-    <text x="16" y="108" class="tag"></text>
-    <text x="62" y="108" class="field">keres_azonosito</text>
-    <text x="347" text-anchor="end" y="108" class="datatype">TEXT · egyedi</text>
-    <text x="16" y="137" class="tag"></text>
-    <text x="62" y="137" class="field">keres_lenyomat</text>
-    <text x="347" text-anchor="end" y="137" class="datatype">TEXT</text>
-    <text x="16" y="166" class="tag"></text>
-    <text x="62" y="166" class="field">vendeg_neve</text>
-    <text x="347" text-anchor="end" y="166" class="datatype">TEXT</text>
-    <text x="16" y="195" class="tag"></text>
-    <text x="62" y="195" class="field">telefonszam</text>
-    <text x="347" text-anchor="end" y="195" class="datatype">TEXT</text>
-    <text x="16" y="224" class="tag"></text>
-    <text x="62" y="224" class="field">megjegyzes</text>
-    <text x="347" text-anchor="end" y="224" class="datatype">TEXT</text>
-    <text x="16" y="253" class="tag"></text>
-    <text x="62" y="253" class="field">allapot</text>
-    <text x="347" text-anchor="end" y="253" class="datatype">TEXT</text>
-    <text x="16" y="282" class="tag"></text>
-    <text x="62" y="282" class="field">vegosszeg</text>
-    <text x="347" text-anchor="end" y="282" class="datatype">INTEGER · Ft</text>
-    <text x="16" y="311" class="tag"></text>
-    <text x="62" y="311" class="field">letrehozva</text>
-    <text x="347" text-anchor="end" y="311" class="datatype">TEXT · UTC</text>
+  <g transform="translate(56 550)">
+    <rect width="365" height="108" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">rendeles_profilok</text>
+    <text x="14" y="42" class="alcim">Rendelés és vendégfiók kapcsolata</text>
+    <text x="14" y="73" class="kulcs">EK/IK</text>
+    <text x="59" y="73" class="mezo">rendeles_azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs">IK</text>
+    <text x="59" y="97" class="mezo">profil_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
   </g>
-  <g transform="translate(496 421)">
-    <rect width="360" height="210" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
-    <path d="M12 0H348Q360 0 360 12V57H0V12Q0 0 12 0Z" fill="#a0371d"/>
-    <text x="16" y="25" class="entity">rendelesi_tetelek</text>
-    <text x="16" y="45" class="caption">Rendelések tételei</text>
-    <text x="16" y="79" class="tag">PK/FK</text>
-    <text x="62" y="79" class="field">rendeles_azonosito</text>
-    <text x="347" text-anchor="end" y="79" class="datatype">TEXT</text>
-    <text x="16" y="108" class="tag">PK/FK</text>
-    <text x="62" y="108" class="field">etel_azonosito</text>
-    <text x="347" text-anchor="end" y="108" class="datatype">INTEGER</text>
-    <text x="16" y="137" class="tag"></text>
-    <text x="62" y="137" class="field">etel_neve</text>
-    <text x="347" text-anchor="end" y="137" class="datatype">TEXT · leadáskor</text>
-    <text x="16" y="166" class="tag"></text>
-    <text x="62" y="166" class="field">egysegar</text>
-    <text x="347" text-anchor="end" y="166" class="datatype">INTEGER · Ft</text>
-    <text x="16" y="195" class="tag"></text>
-    <text x="62" y="195" class="field">mennyiseg</text>
-    <text x="347" text-anchor="end" y="195" class="datatype">INTEGER</text>
+  <g transform="translate(56 744)">
+    <rect width="365" height="228" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">tarca_muveletek</text>
+    <text x="14" y="42" class="alcim">A demópénztárca naplója</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs">IK</text>
+    <text x="59" y="97" class="mezo">profil_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">tipus</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">osszeg</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">letrehozva</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="193" class="kulcs">IK</text>
+    <text x="59" y="193" class="mezo">rendeles_azonosito</text>
+    <text x="350" y="193" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="217" class="kulcs"></text>
+    <text x="59" y="217" class="mezo">keres_azonosito</text>
+    <text x="350" y="217" text-anchor="end" class="tipus">TEXT</text>
   </g>
-  <text x="48" y="787" class="sub">PK — elsődleges kulcs · FK — idegen kulcs · 1 : N — egy-a-többhöz</text>
-  <text x="48" y="808" class="sub">Az rendelesi_tetelek összetett elsődleges kulcsa az rendeles_azonosito és a etel_azonosito mezőből áll.</text>
+  <g transform="translate(526 120)">
+    <rect width="365" height="276" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">rendelesek</text>
+    <text x="14" y="42" class="alcim">Vendégrendelések</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs"></text>
+    <text x="59" y="97" class="mezo">keres_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">keres_lenyomat</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">vendeg_neve</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">telefonszam</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="193" class="kulcs"></text>
+    <text x="59" y="193" class="mezo">megjegyzes</text>
+    <text x="350" y="193" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="217" class="kulcs"></text>
+    <text x="59" y="217" class="mezo">allapot</text>
+    <text x="350" y="217" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="241" class="kulcs"></text>
+    <text x="59" y="241" class="mezo">vegosszeg</text>
+    <text x="350" y="241" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="265" class="kulcs"></text>
+    <text x="59" y="265" class="mezo">letrehozva</text>
+    <text x="350" y="265" text-anchor="end" class="tipus">TEXT</text>
+  </g>
+  <g transform="translate(526 472)">
+    <rect width="365" height="180" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">rendelesi_tetelek</text>
+    <text x="14" y="42" class="alcim">Fogások és leadáskori egységárak</text>
+    <text x="14" y="73" class="kulcs">EK/IK</text>
+    <text x="59" y="73" class="mezo">rendeles_azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs">EK/IK</text>
+    <text x="59" y="97" class="mezo">etel_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">etel_neve</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">egysegar</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">mennyiseg</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">INTEGER</text>
+  </g>
+  <g transform="translate(526 734)">
+    <rect width="365" height="132" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">rendeles_kedvezmenyek</text>
+    <text x="14" y="42" class="alcim">Rendelésenkénti kuponkedvezmény</text>
+    <text x="14" y="73" class="kulcs">EK/IK</text>
+    <text x="59" y="73" class="mezo">rendeles_azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs">IK</text>
+    <text x="59" y="97" class="mezo">kuponkod</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">kedvezmeny</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">INTEGER</text>
+  </g>
+  <g transform="translate(526 914)">
+    <rect width="365" height="276" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">ugyfelszolgalati_jegyek</text>
+    <text x="14" y="42" class="alcim">Üzenetek és válaszok</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs"></text>
+    <text x="59" y="97" class="mezo">keres_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">email</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">targy</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">uzenet</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="193" class="kulcs">IK</text>
+    <text x="59" y="193" class="mezo">rendeles_azonosito</text>
+    <text x="350" y="193" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="217" class="kulcs"></text>
+    <text x="59" y="217" class="mezo">allapot</text>
+    <text x="350" y="217" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="241" class="kulcs"></text>
+    <text x="59" y="241" class="mezo">valasz</text>
+    <text x="350" y="241" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="265" class="kulcs"></text>
+    <text x="59" y="265" class="mezo">letrehozva</text>
+    <text x="350" y="265" text-anchor="end" class="tipus">TEXT</text>
+  </g>
+  <g transform="translate(996 120)">
+    <rect width="365" height="132" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">kategoriak</text>
+    <text x="14" y="42" class="alcim">Étlapi kategóriák</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="97" class="kulcs"></text>
+    <text x="59" y="97" class="mezo">nev</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">sorrend</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">INTEGER</text>
+  </g>
+  <g transform="translate(996 316)">
+    <rect width="365" height="204" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">etelek</text>
+    <text x="14" y="42" class="alcim">Rendelhető fogások</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">azonosito</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="97" class="kulcs">IK</text>
+    <text x="59" y="97" class="mezo">kategoria_azonosito</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">nev</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">leiras</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">ar</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="193" class="kulcs"></text>
+    <text x="59" y="193" class="mezo">elerheto</text>
+    <text x="350" y="193" text-anchor="end" class="tipus">INTEGER</text>
+  </g>
+  <g transform="translate(996 695)">
+    <rect width="365" height="180" rx="12" fill="#fffdf8" stroke="#e0d3c5"/>
+    <path d="M12 0H353Q365 0 365 12V51H0V12Q0 0 12 0Z" fill="#963319"/>
+    <text x="14" y="23" class="tabla">kuponok</text>
+    <text x="14" y="42" class="alcim">Kuponkódok és feltételek</text>
+    <text x="14" y="73" class="kulcs">EK</text>
+    <text x="59" y="73" class="mezo">kod</text>
+    <text x="350" y="73" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="97" class="kulcs"></text>
+    <text x="59" y="97" class="mezo">tipus</text>
+    <text x="350" y="97" text-anchor="end" class="tipus">TEXT</text>
+    <text x="14" y="121" class="kulcs"></text>
+    <text x="59" y="121" class="mezo">ertek</text>
+    <text x="350" y="121" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="145" class="kulcs"></text>
+    <text x="59" y="145" class="mezo">minimum_osszeg</text>
+    <text x="350" y="145" text-anchor="end" class="tipus">INTEGER</text>
+    <text x="14" y="169" class="kulcs"></text>
+    <text x="59" y="169" class="mezo">aktiv</text>
+    <text x="350" y="169" text-anchor="end" class="tipus">INTEGER</text>
+  </g>
+  <text x="56" y="1205" class="leiras">EK — elsődleges kulcs · IK — idegen kulcs · Az EK/IK jel mindkét szerepet jelöli.</text>
+  <text x="56" y="1230" class="leiras">A rendeléshez legfeljebb egy profil és egy kedvezmény tartozik. A kapcsolódó tételek és ügyfélszolgálati jegyek száma több is lehet.</text>
 </svg>
