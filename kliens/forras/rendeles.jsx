@@ -77,6 +77,27 @@ function Kovetes({ rendeles, rendelesBeallitasa, kod, kodBeallitasa }) {
 function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazolas }) {
   const [atvetel, atvetelBeallitasa] = useState(false);
   const nevMezo = useRef(null);
+  const [osszesites, osszesitesBeallitasa] = useState(null);
+  const [osszesitesFoglalt, osszesitesFoglaltsaga] = useState(false);
+  const [osszesitesHiba, osszesitesHibaBeallitasa] = useState('');
+  const tartalom = JSON.stringify(sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })));
+  const ervenyesOsszesites = osszesites?.tartalom === tartalom ? osszesites : null;
+
+  async function osszesitesLekerese() {
+    osszesitesFoglaltsaga(true);
+    osszesitesHibaBeallitasa('');
+    try {
+      const valasz = await api('/rendelesek/osszesites', {
+        modszer: 'POST', adatok: { tetelek: JSON.parse(tartalom) },
+      });
+      osszesitesBeallitasa({ ...valasz, tartalom });
+      atvetelBeallitasa(true);
+    } catch (problema) {
+      osszesitesHibaBeallitasa(problema.message);
+    } finally {
+      osszesitesFoglaltsaga(false);
+    }
+  }
 
   useEffect(() => {
     if (atvetel) nevMezo.current?.focus();
@@ -117,11 +138,16 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
               </li>
             ))}
           </ul>
-          <div className="vegosszeg"><span>Összesen</span><strong>{forintban(vegosszeg)}</strong></div>
+          <div className="vegosszeg"><span>Összesen</span><strong>{forintban(ervenyesOsszesites?.vegosszeg ?? vegosszeg)}</strong></div>
           {atvetel ? (
             <form className="atveteli-urlap" onSubmit={async esemeny => {
               esemeny.preventDefault();
-              if (await elkuld(new FormData(esemeny.currentTarget))) atvetelBeallitasa(false);
+              if (!ervenyesOsszesites) return;
+              if (await elkuld(new FormData(esemeny.currentTarget), ervenyesOsszesites.vegosszeg)) {
+                atvetelBeallitasa(false);
+                osszesitesBeallitasa(null);
+              }
+              else osszesitesBeallitasa(null);
             }}>
               <fieldset disabled={foglalt}>
                 <legend>Átvételi adatok</legend>
@@ -129,14 +155,17 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
                 <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" required minLength={7} maxLength={25} /></label>
                 <label>Megjegyzés <span className="halvany">(opcionális)</span>
                   <textarea name="megjegyzes" rows={2} maxLength={300} /></label>
-                <button className="gomb elsodleges teljes" disabled={sorok.some(sor => !sor.etel)}>
+                {!ervenyesOsszesites && <button type="button" className="gomb masodlagos teljes"
+                  disabled={osszesitesFoglalt || sorok.some(sor => !sor.etel)}
+                  onClick={osszesitesLekerese}>Végösszeg ellenőrzése</button>}
+                <button className="gomb elsodleges teljes" disabled={!ervenyesOsszesites || osszesitesFoglalt || sorok.some(sor => !sor.etel)}>
                   {foglalt ? 'Rendelés küldése…' : 'Rendelés leadása'}
                 </button>
               </fieldset>
             </form>
           ) : (
-            <button className="gomb elsodleges teljes" disabled={foglalt || sorok.some(sor => !sor.etel)}
-              onClick={() => atvetelBeallitasa(true)}>Tovább az adatokhoz</button>
+            <button className="gomb elsodleges teljes" disabled={foglalt || osszesitesFoglalt || sorok.some(sor => !sor.etel)}
+              onClick={osszesitesLekerese}>{osszesitesFoglalt ? 'Összesítés…' : 'Tovább az adatokhoz'}</button>
           )}
           <p className="kosar-megjegyzes">Személyes átvétel, fizetés a helyszínen.</p>
         </>
@@ -144,6 +173,7 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
         <div className="ures-kosar"><strong>{visszaigazolas ? 'Új rendelés' : 'Még üres a kosarad'}</strong>
           <p>Válassz az étlapról, és add a kosaradhoz, amit megkóstolnál.</p></div>
       )}
+      {osszesitesHiba && <p className="hiba" role="alert">{osszesitesHiba}</p>}
       {hiba && <p className="hiba" role="alert">{hiba}</p>}
     </aside>
   );
@@ -207,7 +237,7 @@ export function Rendeles() {
     });
   }
 
-  async function elkuld(urlap) {
+  async function elkuld(urlap, vartVegosszeg) {
     if (folyamatban.current || !sorok.length || sorok.some(sor => !sor.etel)) return false;
     folyamatban.current = true;
     foglaltsagBeallitasa(true);
@@ -220,7 +250,7 @@ export function Rendeles() {
     if (bekuldes.current?.lenyomat !== lenyomat)
       bekuldes.current = { lenyomat, azonosito: keresAzonosito() };
     try {
-      const rendeles = await api('/rendelesek', { modszer: 'POST', adatok: { ...adatok, keresAzonosito: bekuldes.current.azonosito } });
+      const rendeles = await api('/rendelesek', { modszer: 'POST', adatok: { ...adatok, vartVegosszeg, keresAzonosito: bekuldes.current.azonosito } });
       visszaigazolasBeallitasa(rendeles);
       kovetettBeallitasa(rendeles);
       kodBeallitasa(rendeles.azonosito);

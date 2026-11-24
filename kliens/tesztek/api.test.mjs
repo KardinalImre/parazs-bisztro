@@ -141,3 +141,12 @@ test('API-08 · A régi adatbázis rendelései, tételei és elérhetősége át
     await regi.bezaras();
   }
 });
+
+test('API-09 · Az összesítés szerverára ellenőrizhető a leadáskor', async () => {
+  const adatok = minta({ tetelek: [{ etelAzonosito: 2, mennyiseg: 2 }] });
+  const osszesites = await szerver.keres('/rendelesek/osszesites', { modszer: 'POST', adatok });
+  assert.equal(osszesites.kod, 200);
+  assert.equal(osszesites.torzs.vegosszeg, 6980);
+  assert.equal((await leadas({ ...adatok, vartVegosszeg: 1 })).kod, 409);
+  assert.equal((await leadas({ ...adatok, vartVegosszeg: 6980 })).kod, 201);
+});

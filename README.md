@@ -21,6 +21,10 @@ A terminálban megjelenik az induláskor generált személyzeti kulcs. Az adatb�
 
 Frissítéskor a korábbi SQLite-adatbázis átvételét a műszaki dokumentáció ismerteti.
 
+## Étlap, kosár és rendelés
+
+Az étlapon az ételek neve és leírása alapján kereshetsz. A kosár megmutatja az egységárakat és a tételösszegeket. A rendelési űrlap megnyitásakor az API ellenőrzi az ételek elérhetőségét és a végösszeget.
+
 ## Beadandó fájlok
 
 - `kliens/` — React-kliens és automatizált tesztek.
