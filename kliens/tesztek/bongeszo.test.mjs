@@ -62,6 +62,11 @@ test('UI-02 · Mobilos étlap, kosár megőrzése és rendelés 390 px széless�
   page.setDefaultTimeout(8000);
   try {
     await page.goto(szerver.cim);
+    const kereso = page.getByRole('searchbox', { name: 'Keresés az étlapon' });
+    await kereso.fill('csokolade');
+    await page.getByRole('heading', { name: 'Csokoládétorta' }).waitFor();
+    assert.equal(await page.locator('.etel').count(), 1);
+    await kereso.fill('');
     await page.getByRole('button', { name: 'Desszertek', exact: true }).click();
     assert.equal(await page.locator('.etel').count(), 2);
     await page.getByRole('button', { name: 'Házi tiramisu kosárba' }).click();

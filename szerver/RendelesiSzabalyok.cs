@@ -35,17 +35,7 @@ internal static class RendelesiSzabalyok
             throw new KeresHiba(400, "Adj meg érvényes telefonszámot.");
         if (bemenet.KeresAzonosito == Guid.Empty)
             throw new KeresHiba(400, "Érvényes kérésazonosító szükséges.");
-        if (bemenet.Tetelek is null || bemenet.Tetelek.Count is < 1 or > 30)
-            throw new KeresHiba(400, "A rendelés 1–30 különböző tételt tartalmazhat.");
-
-        var mennyisegek = new SortedDictionary<int, int>();
-        foreach (var tetel in bemenet.Tetelek)
-        {
-            if (tetel is null || tetel.EtelAzonosito < 1 || tetel.Mennyiseg is < 1 or > 20)
-                throw new KeresHiba(400, "Minden tételhez érvényes étel és 1–20 adag szükséges.");
-            if (!mennyisegek.TryAdd(tetel.EtelAzonosito, tetel.Mennyiseg))
-                throw new KeresHiba(400, "Egy étel csak egyszer szerepelhet a tételek között.");
-        }
+        var mennyisegek = TetelekEllenorzese(bemenet.Tetelek);
         // A korábbi rendelések lenyomatát az eredeti mezőnevekkel kell újraszámolni.
         var lenyomat = JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -53,6 +43,22 @@ internal static class RendelesiSzabalyok
         });
         return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek,
             Convert.ToHexString(SHA256.HashData(lenyomat)));
+    }
+
+    public static SortedDictionary<int, int> TetelekEllenorzese(List<RendelesiTetelBemenet?>? tetelek)
+    {
+        if (tetelek is null || tetelek.Count is < 1 or > 30)
+            throw new KeresHiba(400, "A rendelés 1–30 különböző tételt tartalmazhat.");
+
+        var mennyisegek = new SortedDictionary<int, int>();
+        foreach (var tetel in tetelek)
+        {
+            if (tetel is null || tetel.EtelAzonosito < 1 || tetel.Mennyiseg is < 1 or > 20)
+                throw new KeresHiba(400, "Minden tételhez érvényes étel és 1–20 adag szükséges.");
+            if (!mennyisegek.TryAdd(tetel.EtelAzonosito, tetel.Mennyiseg))
+                throw new KeresHiba(400, "Egy étel csak egyszer szerepelhet a tételek között.");
+        }
+        return mennyisegek;
     }
 
     private static string SzovegMezo(string? ertek, string mezo, int also, int felso)

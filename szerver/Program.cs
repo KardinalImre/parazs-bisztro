@@ -86,6 +86,7 @@ alkalmazas.UseStaticFiles();
 
 var api = alkalmazas.MapGroup("/api");
 api.MapGet("/etlap", () => adattar.EtlapLekerese());
+api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => new { vegosszeg = adattar.KosarOsszesitese(bemenet) });
 api.MapPost("/rendelesek", (RendelesBemenet bemenet) =>
 {
     var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet);

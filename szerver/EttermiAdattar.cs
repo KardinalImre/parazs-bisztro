@@ -58,6 +58,16 @@ public sealed class EttermiAdattar(string eleresiUt)
         if (modositas.ExecuteNonQuery() == 0) throw new KeresHiba(404, "Az étel nem található.");
     }
 
+    public int KosarOsszesitese(OsszesitesBemenet bemenet)
+    {
+        var mennyisegek = RendelesiSzabalyok.TetelekEllenorzese(bemenet.Tetelek);
+        using var adatbazis = KapcsolatMegnyitasa();
+        using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
+        var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, mennyisegek);
+        tranzakcio.Commit();
+        return tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
+    }
+
     public (RendelesOsszesito Rendeles, bool Letrejott) RendelesLetrehozasa(RendelesBemenet bemenet)
     {
         var keres = RendelesiSzabalyok.Ellenorzes(bemenet);
@@ -76,6 +86,8 @@ public sealed class EttermiAdattar(string eleresiUt)
         var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, keres.Mennyisegek);
         var azonosito = Guid.NewGuid();
         var vegosszeg = tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
+        if (bemenet.VartVegosszeg is int vart && vart != vegosszeg)
+            throw new KeresHiba(409, "A rendelés ára megváltozott. Ellenőrizd az új végösszeget.");
         var idopont = DateTimeOffset.UtcNow.ToString("O");
 
         using var beszuras = Parancs(adatbazis, tranzakcio, """
