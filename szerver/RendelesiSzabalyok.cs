@@ -29,10 +29,8 @@ internal static class RendelesiSzabalyok
     public static EllenorzottRendeles Ellenorzes(RendelesBemenet bemenet)
     {
         var nev = SzovegMezo(bemenet.VendegNeve, "Név", 2, 80);
-        var telefonszam = SzovegMezo(bemenet.Telefonszam, "Telefonszám", 7, 25);
+        var telefonszam = TelefonszamEllenorzese(bemenet.Telefonszam);
         var megjegyzes = SzovegMezo(bemenet.Megjegyzes ?? "", "Megjegyzés", 0, 300);
-        if (!Regex.IsMatch(telefonszam, @"^\+?[0-9 ().-]+$") || telefonszam.Count(char.IsAsciiDigit) is < 7 or > 15)
-            throw new KeresHiba(400, "Adj meg érvényes telefonszámot.");
         if (bemenet.KeresAzonosito == Guid.Empty)
             throw new KeresHiba(400, "Érvényes kérésazonosító szükséges.");
         var mennyisegek = TetelekEllenorzese(bemenet.Tetelek);
@@ -61,7 +59,15 @@ internal static class RendelesiSzabalyok
         return mennyisegek;
     }
 
-    private static string SzovegMezo(string? ertek, string mezo, int also, int felso)
+    internal static string TelefonszamEllenorzese(string? ertek)
+    {
+        var telefonszam = SzovegMezo(ertek, "Telefonszám", 7, 25);
+        if (!Regex.IsMatch(telefonszam, @"^\+?[0-9 ().-]+$") || telefonszam.Count(char.IsAsciiDigit) is < 7 or > 15)
+            throw new KeresHiba(400, "Adj meg érvényes telefonszámot.");
+        return telefonszam;
+    }
+
+    internal static string SzovegMezo(string? ertek, string mezo, int also, int felso)
     {
         var tisztitott = ertek?.Trim();
         if (tisztitott is null || tisztitott.Length < also || tisztitott.Length > felso)

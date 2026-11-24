@@ -56,15 +56,16 @@ export async function tesztkornyezetLetrehozasa(elokeszites) {
     cim: '',
     async ujrainditas() { await leallitas(); this.cim = await inditas(); },
     async bezaras() { await leallitas(); await rm(mappa, { recursive: true, force: true }); },
-    async keres(utvonal, { modszer = 'GET', adatok, szemelyzet = false } = {}) {
+    async keres(utvonal, { modszer = 'GET', adatok, szemelyzet = false, suti } = {}) {
       const headers = {};
+      if (suti) headers.Cookie = suti;
       if (szemelyzet) headers.Authorization = 'Bearer ' + szemelyzetiKulcs;
       if (adatok !== undefined) headers['Content-Type'] = 'application/json';
       const response = await fetch(this.cim + '/api' + utvonal, {
         method: modszer, headers, body: adatok === undefined ? undefined : JSON.stringify(adatok),
       });
       const body = await response.json().catch(() => null);
-      return { kod: response.status, torzs: body, hely: response.headers.get('location') };
+      return { kod: response.status, torzs: body, hely: response.headers.get('location'), suti: response.headers.get('set-cookie') };
     },
   };
   try {

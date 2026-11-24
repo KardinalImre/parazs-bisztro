@@ -74,7 +74,7 @@ function Kovetes({ rendeles, rendelesBeallitasa, kod, kodBeallitasa }) {
   );
 }
 
-function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazolas }) {
+function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazolas, profil }) {
   const [atvetel, atvetelBeallitasa] = useState(false);
   const nevMezo = useRef(null);
   const [osszesites, osszesitesBeallitasa] = useState(null);
@@ -151,8 +151,8 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
             }}>
               <fieldset disabled={foglalt}>
                 <legend>Átvételi adatok</legend>
-                <label>Név<input ref={nevMezo} name="vendegNeve" autoComplete="name" required minLength={2} maxLength={80} /></label>
-                <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" required minLength={7} maxLength={25} /></label>
+                <label>Név<input ref={nevMezo} name="vendegNeve" autoComplete="name" defaultValue={profil?.nev} required minLength={2} maxLength={80} /></label>
+                <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" defaultValue={profil?.telefonszam} required minLength={7} maxLength={25} /></label>
                 <label>Megjegyzés <span className="halvany">(opcionális)</span>
                   <textarea name="megjegyzes" rows={2} maxLength={300} /></label>
                 {!ervenyesOsszesites && <button type="button" className="gomb masodlagos teljes"
@@ -181,6 +181,7 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
 
 export function Rendeles() {
   const [etlap, etlapBeallitasa] = useState(uresEtlap);
+  const [profil, profilBeallitasa] = useState(null);
   const [etlapHiba, etlapHibaBeallitasa] = useState('');
   const [betolt, betoltesBeallitasa] = useState(true);
   const [kategoria, kategoriaBeallitasa] = useState(0);
@@ -211,7 +212,10 @@ export function Rendeles() {
     finally { betoltesBeallitasa(false); }
   }
 
-  useEffect(() => { void etlapBetoltese(); }, []);
+  useEffect(() => {
+    void etlapBetoltese();
+    api('/profil').then(valasz => profilBeallitasa(valasz.profil)).catch(() => {});
+  }, []);
   useEffect(() => { eltarol(kosarKulcs, kosar); }, [kosar]);
 
   const azonositoSzerint = new Map(etlap.etelek.map(etel => [etel.azonosito, etel]));
@@ -325,7 +329,7 @@ export function Rendeles() {
           )}
         </section>
         <Kosar sorok={sorok} vegosszeg={vegosszeg} modositas={modositas} foglalt={foglalt || betolt}
-          elkuld={elkuld} hiba={rendelesHiba} visszaigazolas={visszaigazolas} />
+          elkuld={elkuld} hiba={rendelesHiba} visszaigazolas={visszaigazolas} profil={profil} />
       </div>
       <Kovetes rendeles={kovetett} rendelesBeallitasa={kovetettBeallitasa} kod={kod} kodBeallitasa={kodBeallitasa} />
     </main>

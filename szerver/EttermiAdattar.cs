@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 
 namespace Parazs;
 
-public sealed class EttermiAdattar(string eleresiUt)
+public sealed partial class EttermiAdattar(string eleresiUt)
 {
     private readonly string kapcsolatiKarakterlanc = new SqliteConnectionStringBuilder
     {

@@ -187,3 +187,7 @@ textarea { resize: vertical; }
 .kosar-muveletek { display: grid; justify-items: end; }
 .kosar-muveletek .egyszeru { font-size: .85rem; }
 .kosar-reszosszeg { display: block; margin-top: 4px; }
+
+@media (max-width: 420px) {
+  .fejlec-belso nav { flex-wrap: wrap; justify-content: flex-end; column-gap: 10px; row-gap: 1px; }
+}

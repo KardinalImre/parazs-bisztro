@@ -150,3 +150,21 @@ test('API-09 · Az összesítés szerverára ellenőrizhető a leadáskor', asyn
   assert.equal((await leadas({ ...adatok, vartVegosszeg: 1 })).kod, 409);
   assert.equal((await leadas({ ...adatok, vartVegosszeg: 6980 })).kod, 201);
 });
+
+test('API-10 · A profilhoz való hozzáférést a munkamenet védi', async () => {
+  const adatok = { nev: 'Profil Teszt', email: 'profil@example.com', telefonszam: '06305550100', jelszo: 'Teszt-Jelszo-902' };
+  const regisztracio = await szerver.keres('/profil/regisztracio', { modszer: 'POST', adatok });
+  assert.equal(regisztracio.kod, 201);
+  assert.match(regisztracio.suti, /httponly/i);
+  assert.ok(!('jelszo' in regisztracio.torzs));
+  const suti = regisztracio.suti.split(';')[0];
+  assert.equal((await szerver.keres('/profil')).torzs.profil, null);
+  assert.equal((await szerver.keres('/profil', { suti })).torzs.profil.email, adatok.email);
+  assert.equal((await szerver.keres('/profil/regisztracio', { modszer: 'POST', adatok })).kod, 409);
+  assert.equal((await szerver.keres('/profil/belepes', { modszer: 'POST', adatok: { ...adatok, jelszo: 'Hibas-Jelszo' } })).kod, 401);
+  const modositas = await szerver.keres('/profil', { modszer: 'PATCH', adatok: { nev: 'Új Név' }, suti });
+  assert.equal(modositas.torzs.nev, 'Új Név');
+  assert.equal((await szerver.keres('/profil/munkamenet', { modszer: 'DELETE', suti })).kod, 204);
+  assert.equal((await szerver.keres('/profil', { suti })).torzs.profil, null);
+  assert.equal((await szerver.keres('/profil/belepes', { modszer: 'POST', adatok })).kod, 200);
+});
