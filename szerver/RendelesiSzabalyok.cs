@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace Parazs;
 
 internal sealed record EllenorzottRendeles(Guid KeresAzonosito, string Nev, string Telefonszam, string Megjegyzes,
-    SortedDictionary<int, int> Mennyisegek, string Lenyomat);
+    SortedDictionary<int, int> Mennyisegek, string Lenyomat, string? Kuponkod);
 
 internal static class RendelesiSzabalyok
 {
@@ -39,8 +39,20 @@ internal static class RendelesiSzabalyok
         {
             name = nev, phone = telefonszam, note = megjegyzes, quantities = mennyisegek,
         });
-        return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek,
-            Convert.ToHexString(SHA256.HashData(lenyomat)));
+        var kuponkod = KuponkodEllenorzese(bemenet.Kuponkod);
+        var ujjlenyomat = Convert.ToHexString(SHA256.HashData(lenyomat));
+        if (kuponkod is not null)
+            ujjlenyomat = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(ujjlenyomat + ":" + kuponkod)));
+        return new(bemenet.KeresAzonosito, nev, telefonszam, megjegyzes, mennyisegek, ujjlenyomat, kuponkod);
+    }
+
+    internal static string? KuponkodEllenorzese(string? ertek)
+    {
+        if (string.IsNullOrWhiteSpace(ertek)) return null;
+        var kod = ertek.Trim().ToUpperInvariant();
+        if (!Regex.IsMatch(kod, @"^[A-Z0-9]{3,24}$"))
+            throw new KeresHiba(422, "A kuponkód formátuma érvénytelen.");
+        return kod;
     }
 
     public static SortedDictionary<int, int> TetelekEllenorzese(List<RendelesiTetelBemenet?>? tetelek)

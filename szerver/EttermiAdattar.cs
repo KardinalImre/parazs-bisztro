@@ -58,14 +58,15 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         if (modositas.ExecuteNonQuery() == 0) throw new KeresHiba(404, "Az étel nem található.");
     }
 
-    public int KosarOsszesitese(OsszesitesBemenet bemenet)
+    public KosarOsszesites KosarOsszesitese(OsszesitesBemenet bemenet)
     {
         var mennyisegek = RendelesiSzabalyok.TetelekEllenorzese(bemenet.Tetelek);
         using var adatbazis = KapcsolatMegnyitasa();
         using var tranzakcio = adatbazis.BeginTransaction(deferred: true);
         var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, mennyisegek);
+        var osszesites = Osszesites(adatbazis, tranzakcio, tetelek, RendelesiSzabalyok.KuponkodEllenorzese(bemenet.Kuponkod));
         tranzakcio.Commit();
-        return tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
+        return osszesites;
     }
 
     public (RendelesOsszesito Rendeles, bool Letrejott) RendelesLetrehozasa(RendelesBemenet bemenet, Guid? profilAzonosito)
@@ -85,7 +86,8 @@ public sealed partial class EttermiAdattar(string eleresiUt)
 
         var tetelek = RendelhetoTetelek(adatbazis, tranzakcio, keres.Mennyisegek);
         var azonosito = Guid.NewGuid();
-        var vegosszeg = tetelek.Sum(tetel => tetel.Egysegar * tetel.Mennyiseg);
+        var osszesites = Osszesites(adatbazis, tranzakcio, tetelek, keres.Kuponkod);
+        var vegosszeg = osszesites.Vegosszeg;
         if (bemenet.VartVegosszeg is int vart && vart != vegosszeg)
             throw new KeresHiba(409, "A rendelés ára megváltozott. Ellenőrizd az új végösszeget.");
         var idopont = DateTimeOffset.UtcNow.ToString("O");
@@ -105,6 +107,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             hozzarendeles.ExecuteNonQuery();
         }
 
+        KuponMentese(adatbazis, tranzakcio, azonosito, osszesites);
         foreach (var tetel in tetelek)
         {
             using var tetelSor = Parancs(adatbazis, tranzakcio, """
@@ -115,7 +118,7 @@ public sealed partial class EttermiAdattar(string eleresiUt)
             tetelSor.ExecuteNonQuery();
         }
         tranzakcio.Commit();
-        return (new(azonosito, "beerkezett", vegosszeg, idopont, tetelek), true);
+        return (new(azonosito, "beerkezett", vegosszeg, idopont, tetelek, osszesites.Kedvezmeny, osszesites.Kuponkod), true);
     }
 
     public RendelesOsszesito RendelesLekerese(Guid azonosito)
@@ -204,7 +207,10 @@ public sealed partial class EttermiAdattar(string eleresiUt)
     private static SzemelyzetiRendeles RendelesOlvasasa(SqliteConnection adatbazis, SqliteTransaction tranzakcio, Guid azonosito)
     {
         using var rendeles = Parancs(adatbazis, tranzakcio, """
-            SELECT allapot, vegosszeg, letrehozva, vendeg_neve, telefonszam, megjegyzes FROM rendelesek WHERE azonosito = $azonosito
+            SELECT r.allapot, r.vegosszeg, r.letrehozva, r.vendeg_neve, r.telefonszam, r.megjegyzes,
+                COALESCE(k.kedvezmeny, 0), k.kuponkod
+            FROM rendelesek r LEFT JOIN rendeles_kedvezmenyek k ON k.rendeles_azonosito = r.azonosito
+            WHERE r.azonosito = $azonosito
             """, ("$azonosito", azonosito.ToString()));
         SzemelyzetiRendeles eredmeny;
         var tetelek = new List<RendelesiTetel>();
@@ -212,7 +218,8 @@ public sealed partial class EttermiAdattar(string eleresiUt)
         {
             if (!sor.Read()) throw new KeresHiba(404, "A rendelés nem található.");
             eredmeny = new(azonosito, sor.GetString(0), sor.GetInt32(1), sor.GetString(2), tetelek,
-                sor.GetString(3), sor.GetString(4), sor.GetString(5));
+                sor.GetString(3), sor.GetString(4), sor.GetString(5), sor.GetInt32(6),
+                sor.IsDBNull(7) ? null : sor.GetString(7));
         }
         using var tetelSorok = Parancs(adatbazis, tranzakcio, """
             SELECT etel_azonosito, etel_neve, egysegar, mennyiseg FROM rendelesi_tetelek WHERE rendeles_azonosito = $azonosito ORDER BY etel_azonosito

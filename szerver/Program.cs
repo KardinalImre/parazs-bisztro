@@ -64,6 +64,7 @@ alkalmazas.UseStatusCodePages(async allapotKornyezet =>
         405 => "Ez a művelet itt nem érhető el.",
         413 => "A kérés túl nagy.",
         415 => "A kérés formátuma nem támogatott.",
+        422 => "A megadott adatokkal a művelet nem végezhető el.",
         429 => "Túl sok kérés érkezett. Próbáld meg egy perc múlva.",
         _ => "A kérés sikertelen.",
     };
@@ -99,7 +100,7 @@ alkalmazas.UseRateLimiter();
 var api = alkalmazas.MapGroup("/api");
 api.ProfilVegpontokFelvetele(adattar);
 api.MapGet("/etlap", () => adattar.EtlapLekerese());
-api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => new { vegosszeg = adattar.KosarOsszesitese(bemenet) });
+api.MapPost("/rendelesek/osszesites", (OsszesitesBemenet bemenet) => adattar.KosarOsszesitese(bemenet));
 api.MapPost("/rendelesek", (RendelesBemenet bemenet, HttpContext kornyezet) =>
 {
     var (rendeles, letrejott) = adattar.RendelesLetrehozasa(bemenet, ProfilVegpontok.AktualisProfil(kornyezet, adattar)?.Azonosito);

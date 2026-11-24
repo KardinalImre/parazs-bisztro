@@ -80,7 +80,11 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
   const [osszesites, osszesitesBeallitasa] = useState(null);
   const [osszesitesFoglalt, osszesitesFoglaltsaga] = useState(false);
   const [osszesitesHiba, osszesitesHibaBeallitasa] = useState('');
-  const tartalom = JSON.stringify(sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })));
+  const [kuponkod, kuponkodBeallitasa] = useState('');
+  const tartalom = JSON.stringify({
+    tetelek: sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })),
+    kuponkod: kuponkod.trim().toUpperCase(),
+  });
   const ervenyesOsszesites = osszesites?.tartalom === tartalom ? osszesites : null;
 
   async function osszesitesLekerese() {
@@ -88,7 +92,7 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
     osszesitesHibaBeallitasa('');
     try {
       const valasz = await api('/rendelesek/osszesites', {
-        modszer: 'POST', adatok: { tetelek: JSON.parse(tartalom) },
+        modszer: 'POST', adatok: JSON.parse(tartalom),
       });
       osszesitesBeallitasa({ ...valasz, tartalom });
       atvetelBeallitasa(true);
@@ -138,14 +142,18 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
               </li>
             ))}
           </ul>
+          {ervenyesOsszesites?.kedvezmeny > 0 && <p className="kosar-kupon">
+            {ervenyesOsszesites.kuponkod} kedvezmény −{forintban(ervenyesOsszesites.kedvezmeny)}
+          </p>}
           <div className="vegosszeg"><span>Összesen</span><strong>{forintban(ervenyesOsszesites?.vegosszeg ?? vegosszeg)}</strong></div>
           {atvetel ? (
             <form className="atveteli-urlap" onSubmit={async esemeny => {
               esemeny.preventDefault();
               if (!ervenyesOsszesites) return;
-              if (await elkuld(new FormData(esemeny.currentTarget), ervenyesOsszesites.vegosszeg)) {
+              if (await elkuld(new FormData(esemeny.currentTarget), ervenyesOsszesites)) {
                 atvetelBeallitasa(false);
                 osszesitesBeallitasa(null);
+                kuponkodBeallitasa('');
               }
               else osszesitesBeallitasa(null);
             }}>
@@ -155,6 +163,10 @@ function Kosar({ sorok, vegosszeg, modositas, foglalt, elkuld, hiba, visszaigazo
                 <label>Telefonszám<input name="telefonszam" type="tel" autoComplete="tel" defaultValue={profil?.telefonszam} required minLength={7} maxLength={25} /></label>
                 <label>Megjegyzés <span className="halvany">(opcionális)</span>
                   <textarea name="megjegyzes" rows={2} maxLength={300} /></label>
+                <label>Kuponkód <span className="halvany">(opcionális)</span>
+                  <input value={kuponkod} maxLength={24} autoComplete="off"
+                    onChange={esemeny => { kuponkodBeallitasa(esemeny.target.value); osszesitesHibaBeallitasa(''); }} />
+                </label>
                 {!ervenyesOsszesites && <button type="button" className="gomb masodlagos teljes"
                   disabled={osszesitesFoglalt || sorok.some(sor => !sor.etel)}
                   onClick={osszesitesLekerese}>Végösszeg ellenőrzése</button>}
@@ -241,7 +253,7 @@ export function Rendeles() {
     });
   }
 
-  async function elkuld(urlap, vartVegosszeg) {
+  async function elkuld(urlap, osszesites) {
     if (folyamatban.current || !sorok.length || sorok.some(sor => !sor.etel)) return false;
     folyamatban.current = true;
     foglaltsagBeallitasa(true);
@@ -249,12 +261,13 @@ export function Rendeles() {
     const adatok = {
       vendegNeve: urlap.get('vendegNeve'), telefonszam: urlap.get('telefonszam'), megjegyzes: urlap.get('megjegyzes'),
       tetelek: sorok.map(({ azonosito, mennyiseg }) => ({ etelAzonosito: azonosito, mennyiseg })),
+      kuponkod: osszesites.kuponkod,
     };
     const lenyomat = JSON.stringify(adatok);
     if (bekuldes.current?.lenyomat !== lenyomat)
       bekuldes.current = { lenyomat, azonosito: keresAzonosito() };
     try {
-      const rendeles = await api('/rendelesek', { modszer: 'POST', adatok: { ...adatok, vartVegosszeg, keresAzonosito: bekuldes.current.azonosito } });
+      const rendeles = await api('/rendelesek', { modszer: 'POST', adatok: { ...adatok, vartVegosszeg: osszesites.vegosszeg, keresAzonosito: bekuldes.current.azonosito } });
       visszaigazolasBeallitasa(rendeles);
       kovetettBeallitasa(rendeles);
       kodBeallitasa(rendeles.azonosito);

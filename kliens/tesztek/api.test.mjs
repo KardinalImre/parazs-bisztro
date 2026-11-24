@@ -187,3 +187,16 @@ test('API-11 · A rendelési előzmény csak a saját új rendeléseket mutatja'
   assert.deepEqual((await szerver.keres('/profil/rendelesek', { suti: masodik })).torzs, []);
   assert.equal((await szerver.keres('/rendelesek', { modszer: 'POST', adatok, suti: masodik })).kod, 409);
 });
+
+test('API-12 · A kupon kedvezményét a szerver számolja és megőrzi', async () => {
+  const adatok = minta({ kuponkod: ' parazs10 ', tetelek: [{ etelAzonosito: 1, mennyiseg: 1 }] });
+  const elozetes = await szerver.keres('/rendelesek/osszesites', { modszer: 'POST', adatok });
+  assert.deepEqual(elozetes.torzs, { reszosszeg: 4290, kedvezmeny: 429, vegosszeg: 3861, kuponkod: 'PARAZS10' });
+  assert.equal((await leadas({ ...adatok, kuponkod: 'ISMERETLEN' })).kod, 422);
+  assert.equal((await leadas({ ...adatok, kuponkod: 'ELVITEL500', tetelek: [{ etelAzonosito: 2, mennyiseg: 1 }] })).kod, 422);
+  const rendeles = await leadas(adatok);
+  assert.equal(rendeles.kod, 201);
+  assert.equal(rendeles.torzs.kedvezmeny, 429);
+  assert.deepEqual((await szerver.keres('/rendelesek/' + rendeles.torzs.azonosito)).torzs, rendeles.torzs);
+  assert.equal((await leadas({ ...adatok, kuponkod: 'ELVITEL500' })).kod, 409);
+});
